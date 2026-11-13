@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Wedding Gift & Expense Management | ប្រព័ន្ធគ្រប់គ្រងចំណងដៃ និងចំណាយ</title>
+  
+  <!-- Mobile & PWA Configuration -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Wedding App">
+  <meta name="theme-color" content="#db2777">
+  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3656/3656858.png">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3656/3656858.png">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="min-h-screen text-gray-800 antialiased flex flex-col justify-between">
+
+  <!-- ======================================================== -->
+  <!-- 1. AUTHENTICATION (LOGIN) VIEW                           -->
+  <!-- ======================================================== -->
+  <div id="auth-container" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-pink-100 via-rose-50 to-amber-50">
+    <div class="w-full max-w-md bg-white/90 backdrop-blur-md p-8 rounded-3xl shadow-2xl border border-pink-100 text-center">
+      
+      <!-- Wedding Couple Avatar (Click to Upload / Change Photo) -->
+      <div class="relative w-24 h-24 mx-auto mb-2 group cursor-pointer" onclick="document.getElementById('login-avatar-input').click()" title="ចុចដើម្បីដាក់រូបភាពគូស្នេហ៍ / រូបថតមង្គលការ">
+        <!-- Avatar Image (if chosen) -->
+        <img id="login-avatar-img" src="" alt="Wedding Couple" class="hidden w-full h-full object-cover rounded-full shadow-lg shadow-pink-200 border-2 border-pink-300">
+        
+        <!-- Default Placeholder with Heart Icon -->
+        <div id="login-avatar-placeholder" class="w-full h-full bg-gradient-to-tr from-pink-500 to-rose-400 text-white rounded-full flex items-center justify-center shadow-lg shadow-pink-300">
+          <i class="fa-solid fa-heart text-3xl text-white"></i>
+        </div>
+
+        <!-- Camera overlay icon -->
+        <div class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-pink-600 hover:bg-pink-700 text-white flex items-center justify-center shadow-md border-2 border-white transition group-hover:scale-110">
+          <i class="fa-solid fa-camera text-xs"></i>
+        </div>
+
+        <!-- Hidden File Input for Avatar Upload -->
+        <input type="file" id="login-avatar-input" accept="image/*" class="hidden" onchange="handleAvatarUpload(event)">
+      </div>
+      <p class="text-[11px] text-gray-400 mb-4 cursor-pointer hover:text-pink-600 transition" onclick="document.getElementById('login-avatar-input').click()">
+        <i class="fa-solid fa-camera mr-1"></i> ចុចលើរង្វង់មូលដើម្បីដាក់រូបថត
+      </p>
+      
+      <h1 class="text-2xl font-bold font-serif-title text-gray-800 mb-1">កម្មវិធីគ្រប់គ្រងចំណងដៃ & ចំណាយ</h1>
+      <p class="text-sm text-pink-600 font-medium mb-6">Wedding Gift & Expense Manager</p>
+
+      <form id="login-form" class="space-y-4 text-left">
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">
+            <i class="fa-regular fa-user mr-1 text-pink-500"></i> ឈ្មោះគណនី (Username)
+          </label>
+          <input type="text" id="login-username" required placeholder="ឧ. admin ឬ wife" 
+            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 transition text-sm">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">
+            <i class="fa-solid fa-lock mr-1 text-pink-500"></i> ពាក្យសម្ងាត់ (Password)
+          </label>
+          <input type="password" id="login-password" required placeholder="••••••••" 
+            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 transition text-sm">
+        </div>
+
+        <button type="submit" 
+          class="w-full py-3 bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white font-semibold rounded-xl shadow-lg shadow-pink-300/50 transition duration-200 flex items-center justify-center space-x-2">
+          <span>ចូលប្រើប្រព័ន្ធ (Login)</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+
+      <!-- Connection / Settings & Password Change shortcut -->
+      <div class="mt-6 pt-4 border-t border-pink-100 flex items-center justify-between text-xs text-gray-500">
+        <button type="button" onclick="openChangePasswordModal()" class="text-pink-600 hover:text-pink-800 font-semibold flex items-center gap-1">
+          <i class="fa-solid fa-key"></i> ប្តូរលេខសម្ងាត់
+        </button>
+        <button onclick="openSettingsModal()" class="text-gray-500 hover:text-gray-700 font-medium flex items-center gap-1">
+          <i class="fa-solid fa-gear"></i> កំណត់ API
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 2. MAIN APPLICATION CONTAINER                            -->
+  <!-- ======================================================== -->
+  <div id="main-app-container" class="hidden min-h-screen flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-white/95 backdrop-blur-md border-b border-pink-100 sticky top-0 z-40 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+        
+        <!-- App Logo & Title -->
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('dashboard-view')">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-600 to-rose-500 text-white flex items-center justify-center shadow-md shadow-pink-200">
+            <i class="fa-solid fa-gem text-lg"></i>
+          </div>
+          <div>
+            <h1 class="text-base sm:text-lg font-bold text-gray-900 leading-tight">Wedding Gift & Expense</h1>
+            <p class="text-xs text-pink-600">សៀវភៅកត់ត្រាចំណងដៃ និងចំណាយ</p>
+          </div>
+        </div>
+
+        <!-- User Info & Action Controls -->
+        <div class="flex items-center space-x-1.5 sm:space-x-3">
+          <div class="hidden sm:flex items-center space-x-2 px-3 py-1.5 bg-pink-50 rounded-full border border-pink-100">
+            <img id="header-user-avatar" src="" alt="Avatar" class="hidden w-5 h-5 rounded-full object-cover border border-pink-300">
+            <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
+            <span class="text-xs font-semibold text-pink-900" id="current-user-display">Admin</span>
+          </div>
+
+          <!-- Change Password Button -->
+          <button onclick="openChangePasswordModal()" title="ប្តូរលេខសម្ងាត់ (Change Password)" 
+            class="p-2 text-gray-600 hover:text-pink-600 hover:bg-pink-50 rounded-xl transition">
+            <i class="fa-solid fa-key text-base"></i>
+          </button>
+
+          <button onclick="openSettingsModal()" title="ការកំណត់ API & Database" 
+            class="p-2 text-gray-600 hover:text-pink-600 hover:bg-pink-50 rounded-xl transition">
+            <i class="fa-solid fa-sliders text-base"></i>
+          </button>
+
+          <button onclick="fetchAllData()" title="ផ្ទុកទិន្នន័យឡើងវិញ (Sync)" 
+            class="p-2 text-gray-600 hover:text-pink-600 hover:bg-pink-50 rounded-xl transition">
+            <i class="fa-solid fa-arrows-rotate text-base"></i>
+          </button>
+
+          <button onclick="openLogoutModal()" class="btn-logout p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition" title="ចាកចេញ (Logout)">
+            <i class="fa-solid fa-right-from-bracket text-base"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs Bar (Desktop) -->
+      <div class="hidden md:flex max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-x-2 overflow-x-auto py-2 scrollbar-none border-t border-pink-50">
+        <button class="nav-btn active px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl text-gray-700 hover:bg-pink-50 transition whitespace-nowrap flex items-center space-x-2" 
+          data-view="dashboard-view">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>ផ្ទាំងគ្រប់គ្រង (Dashboard)</span>
+        </button>
+
+        <button class="nav-btn px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl text-gray-700 hover:bg-pink-50 transition whitespace-nowrap flex items-center space-x-2" 
+          data-view="gift-entry-view">
+          <i class="fa-solid fa-gift"></i>
+          <span>បញ្ចូលចំណងដៃ (Gift Entry)</span>
+        </button>
+
+        <button class="nav-btn px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl text-gray-700 hover:bg-pink-50 transition whitespace-nowrap flex items-center space-x-2" 
+          data-view="gifts-table-view">
+          <i class="fa-solid fa-table-list"></i>
+          <span>តារាងចំណងដៃ (Gifts List)</span>
+        </button>
+
+        <button class="nav-btn px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl text-gray-700 hover:bg-pink-50 transition whitespace-nowrap flex items-center space-x-2" 
+          data-view="expense-entry-view">
+          <i class="fa-solid fa-receipt"></i>
+          <span>បញ្ចូលការចំណាយ (Expense)</span>
+        </button>
+
+        <button class="nav-btn px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl text-gray-700 hover:bg-pink-50 transition whitespace-nowrap flex items-center space-x-2" 
+          data-view="expenses-table-view">
+          <i class="fa-solid fa-file-invoice-dollar"></i>
+          <span>តារាងចំណាយ (Expenses List)</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 md:pb-8 w-full flex-1">
+
+      <!-- ========================================== -->
+      <!-- VIEW 1: DASHBOARD                          -->
+      <!-- ========================================== -->
+      <section id="dashboard-view" class="space-y-4 sm:space-y-6">
+        
+        <!-- Welcome Banner (Compact & Responsive) -->
+        <div class="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 text-white shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-base sm:text-2xl font-bold font-serif-title flex items-center gap-2">
+              <i class="fa-solid fa-gem text-pink-200 text-sm sm:text-lg"></i>
+              <span>ផ្ទាំងគ្រប់គ្រងមង្គលការ</span>
+            </h2>
+            <p class="text-xs text-pink-100 mt-0.5">តាមដានចំណូលចំណងដៃ ចំណាយ និងតុល្យភាពថវិកាយ៉ាងច្បាស់លាស់</p>
+          </div>
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <button onclick="switchView('gift-entry-view')" class="flex-1 sm:flex-none px-3.5 py-1.5 bg-white text-pink-600 font-bold rounded-xl text-xs shadow hover:bg-pink-50 transition flex items-center justify-center gap-1">
+              <i class="fa-solid fa-plus"></i> កត់ចំណងដៃ
+            </button>
+            <button onclick="switchView('expense-entry-view')" class="flex-1 sm:flex-none px-3.5 py-1.5 bg-white/20 backdrop-blur-md text-white font-bold rounded-xl text-xs hover:bg-white/30 transition flex items-center justify-center gap-1">
+              <i class="fa-solid fa-plus"></i> កត់ចំណាយ
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric Summary Cards (2x2 on Mobile, 4x1 on Desktop) -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-5">
+          
+          <!-- 1. Total Gifts Card -->
+          <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-pink-100 card-hover flex flex-col justify-between">
+            <div class="flex items-center justify-between gap-1 mb-2">
+              <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 truncate">ចំណងដៃសរុប (Gifts)</span>
+              <div class="w-7 h-7 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-hand-holding-dollar text-xs sm:text-lg"></i>
+              </div>
+            </div>
+            <div>
+              <div class="text-lg sm:text-2xl font-extrabold text-emerald-600" id="dash-gift-usd">$0</div>
+              <div class="text-xs sm:text-sm font-semibold text-emerald-500" id="dash-gift-khr">0 ៛</div>
+              <div class="mt-1.5">
+                <span class="text-[10px] sm:text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium inline-block truncate max-w-full">
+                  ភ្ញៀវ: <strong id="dash-gift-count">0</strong> នាក់
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Total Deposit Paid Card (ប្រាក់កក់មុន) -->
+          <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-amber-100 card-hover flex flex-col justify-between">
+            <div class="flex items-center justify-between gap-1 mb-2">
+              <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 truncate">ប្រាក់កក់មុន (Deposits)</span>
+              <div class="w-7 h-7 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-wallet text-xs sm:text-lg"></i>
+              </div>
+            </div>
+            <div>
+              <div class="text-lg sm:text-2xl font-extrabold text-amber-600" id="dash-deposit-usd">$0</div>
+              <div class="text-xs sm:text-sm font-semibold text-amber-500" id="dash-deposit-khr">0 ៛</div>
+              <div class="mt-1.5">
+                <span class="text-[10px] sm:text-xs px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full font-medium inline-block truncate max-w-full">
+                  បានកក់មុន
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Total Expenses Card -->
+          <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-pink-100 card-hover flex flex-col justify-between">
+            <div class="flex items-center justify-between gap-1 mb-2">
+              <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 truncate">ចំណាយសរុប (Expenses)</span>
+              <div class="w-7 h-7 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-money-bill-transfer text-xs sm:text-lg"></i>
+              </div>
+            </div>
+            <div>
+              <div class="text-lg sm:text-2xl font-extrabold text-rose-600" id="dash-exp-usd">$0</div>
+              <div class="text-xs sm:text-sm font-semibold text-rose-500" id="dash-exp-khr">0 ៛</div>
+              <div class="mt-1.5">
+                <span class="text-[10px] sm:text-xs px-2 py-0.5 bg-rose-100 text-rose-700 rounded-full font-medium inline-block truncate max-w-full">
+                  ចំណាយ: <strong id="dash-exp-count">0</strong> មុខ
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Net Balance Card -->
+          <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-pink-100 card-hover flex flex-col justify-between">
+            <div class="flex items-center justify-between gap-1 mb-2">
+              <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 truncate">តុល្យភាពសុទ្ធ (Balance)</span>
+              <div class="w-7 h-7 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-scale-balanced text-xs sm:text-lg"></i>
+              </div>
+            </div>
+            <div>
+              <div class="text-lg sm:text-2xl font-extrabold text-indigo-600" id="dash-net-usd">$0</div>
+              <div class="text-xs sm:text-sm font-semibold text-indigo-500" id="dash-net-khr">0 ៛</div>
+              <div class="mt-1.5">
+                <span class="text-[10px] sm:text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full font-medium inline-block truncate max-w-full">
+                  ចំណូលដកចំណាយ
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Gifts Section (Table on Desktop, Sleek List on Mobile) -->
+        <div class="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-pink-100 p-4 sm:p-6">
+          <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <div>
+              <h3 class="text-sm sm:text-base font-bold text-gray-900">ចំណងដៃថ្មីៗចុងក្រោយ (Recent Gifts)</h3>
+              <p class="text-[11px] sm:text-xs text-gray-500">ទិន្នន័យ ៥ នាក់ចុងក្រោយដែលបានកត់ត្រា</p>
+            </div>
+            <button onclick="switchView('gifts-table-view')" class="text-xs font-bold text-pink-600 hover:text-pink-800 flex items-center gap-1">
+              <span>មើលទាំងអស់</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </button>
+          </div>
+
+          <!-- Desktop Table (visible on md+) -->
+          <div class="hidden md:block overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-pink-50/50 text-gray-600 text-xs font-semibold uppercase">
+                <tr>
+                  <th class="px-4 py-3 rounded-l-xl">ឈ្មោះភ្ញៀវ</th>
+                  <th class="px-4 py-3">ខេត្ត/ក្រុង</th>
+                  <th class="px-4 py-3">ចំនួនទឹកប្រាក់</th>
+                  <th class="px-4 py-3 rounded-r-xl">ស្ថានភាព</th>
+                </tr>
+              </thead>
+              <tbody id="dash-recent-gifts">
+                <!-- Dynamically injected for desktop -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile Recent Gifts List (visible on small screens / phones) -->
+          <div id="dash-recent-gifts-mobile" class="block md:hidden divide-y divide-gray-100">
+            <!-- Dynamically injected for mobile -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW 2: GIFT ENTRY FORM                    -->
+      <!-- ========================================== -->
+      <section id="gift-entry-view" class="hidden">
+        <div class="max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-pink-100">
+          
+          <div class="flex items-center justify-between border-b border-pink-100 pb-4 mb-6">
+            <div>
+              <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-envelope-open-text text-pink-500"></i>
+                <span id="gift-form-heading">កត់ត្រាចំណងដៃ (Gift Entry Form)</span>
+              </h2>
+              <p class="text-xs text-gray-500">បំពេញព័ត៌មានភ្ញៀវ ចំនួនទឹកប្រាក់ និងទីតាំងភូមិសាស្ត្រ</p>
+            </div>
+            <button id="gift-cancel-edit-btn" type="button" class="hidden px-3 py-1.5 text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg">
+              បោះបង់ការកែប្រែ
+            </button>
+          </div>
+
+          <form id="gift-form" class="space-y-5">
+            
+            <!-- Row 1: Guest Name, Gender, Guest Side, Relation -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                  ឈ្មោះភ្ញៀវ (Guest Name) <span class="text-rose-500">*</span>
+                </label>
+                <input type="text" id="gift-guest-name" required placeholder="ឧ. ឯកឧត្តម សុខ ចាន់"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">ភេទ (Gender)</label>
+                <select id="gift-gender" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm bg-white">
+                  <option value="ប្រុស">ប្រុស (Male)</option>
+                  <option value="ស្រី">ស្រី (Female)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                  ភ្ញៀវ (Guest Side) <span class="text-rose-500">*</span>
+                </label>
+                <select id="gift-side" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm bg-white font-medium">
+                  <option value="ខាងប្រុស">ខាងប្រុស (Groom's Side)</option>
+                  <option value="ខាងស្រី">ខាងស្រី (Bride's Side)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">ទំនាក់ទំនង (Relation)</label>
+                <select id="gift-relation" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm bg-white font-medium">
+                  <option value="បងប្អូនបង្កើត">បងប្អូនបង្កើត</option>
+                  <option value="បងប្អូនជីដូនមួយ">បងប្អូនជីដូនមួយ</option>
+                  <option value="មិត្តភក្តិ" selected>មិត្តភក្តិ</option>
+                  <option value="អ្នកជិតខាង">អ្នកជិតខាង</option>
+                  <option value="មិត្តរួមការងារ">មិត្តរួមការងារ</option>
+                  <option value="ផ្សេងៗ">ផ្សេងៗ</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Row 2: Invited Via, Amount, Currency, Status -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">អញ្ជើញតាមរយះ (Invited Via)</label>
+                <select id="gift-invite-method" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm bg-white font-medium">
+                  <option value="ផ្ទាល់">ផ្ទាល់ (In Person)</option>
+                  <option value="ហ្វេសប៊ុក">ហ្វេសប៊ុក (Facebook)</option>
+                  <option value="តេលេក្រាម">តេលេក្រាម (Telegram)</option>
+                  <option value="ឡាញ">ឡាញ (LINE)</option>
+                  <option value="លេខទូរស័ព្ទ">លេខទូរស័ព្ទ (Call/SMS)</option>
+                  <option value="ផ្សេងៗ">ផ្សេងៗ (Other)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                  ចំនួនទឹកប្រាក់ (Amount) <span class="text-rose-500">*</span>
+                </label>
+                <input type="number" step="any" id="gift-amount" required placeholder="0"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm font-semibold">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">រូបិយប័ណ្ណ (Currency)</label>
+                <select id="gift-currency" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm bg-white font-semibold">
+                  <option value="USD">USD ($ - ដុល្លារ)</option>
+                  <option value="KHR">KHR (៛ - រៀល)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">ស្ថានភាព (Status)</label>
+                <select id="gift-status" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm bg-white">
+                  <option value="ជំពាក់ដៃយើង">ជំពាក់ដៃយើង (Pending)</option>
+                  <option value="ជំពាក់គេ">ជំពាក់គេ</option>
+                  <option value="សងដៃរួច">សងដៃរួច (Settled)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Cascading Dropdowns Section -->
+            <div class="p-4 bg-pink-50/50 rounded-2xl border border-pink-100 space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-pink-900 uppercase tracking-wider">
+                  <i class="fa-solid fa-location-dot mr-1 text-pink-500"></i> ទីតាំងភូមិសាស្ត្រ (Cascading Location Dropdown)
+                </span>
+                <span class="text-[11px] text-pink-600">ចុចប៊ូតុង [+] ដើម្បីបន្ថែមទីតាំងថ្មីភ្លាមៗ</span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
+                <!-- Province Dropdown + Add Button -->
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 mb-1">ខេត្ត/រាជធានី (Province)</label>
+                  <div class="flex gap-1.5">
+                    <select id="gift-province" class="flex-1 px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm bg-white">
+                      <option value="">-- ជ្រើសរើសខេត្ត/ក្រុង --</option>
+                    </select>
+                    <button type="button" onclick="openAddLocationModal('Province')" title="បន្ថែមខេត្តថ្មី"
+                      class="px-3 py-2 bg-pink-100 hover:bg-pink-200 text-pink-700 rounded-xl font-bold text-sm transition">
+                      [+]
+                    </button>
+                  </div>
+                </div>
+
+                <!-- District Dropdown + Add Button -->
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 mb-1">ស្រុក/ខណ្ឌ (District)</label>
+                  <div class="flex gap-1.5">
+                    <select id="gift-district" class="flex-1 px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm bg-white">
+                      <option value="">-- ជ្រើសរើសស្រុក/ខណ្ឌ --</option>
+                    </select>
+                    <button type="button" onclick="openAddLocationModal('District')" title="បន្ថែមស្រុកថ្មី"
+                      class="px-3 py-2 bg-pink-100 hover:bg-pink-200 text-pink-700 rounded-xl font-bold text-sm transition">
+                      [+]
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Commune Dropdown + Add Button -->
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 mb-1">ឃុំ/សង្កាត់ (Commune)</label>
+                  <div class="flex gap-1.5">
+                    <select id="gift-commune" class="flex-1 px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm bg-white">
+                      <option value="">-- ជ្រើសរើសឃុំ/សង្កាត់ --</option>
+                    </select>
+                    <button type="button" onclick="openAddLocationModal('Commune')" title="បន្ថែមឃុំថ្មី"
+                      class="px-3 py-2 bg-pink-100 hover:bg-pink-200 text-pink-700 rounded-xl font-bold text-sm transition">
+                      [+]
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Village Dropdown + Add Button -->
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 mb-1">ភូមិ (Village)</label>
+                  <div class="flex gap-1.5">
+                    <select id="gift-village" class="flex-1 px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm bg-white">
+                      <option value="">-- ជ្រើសរើសភូមិ --</option>
+                    </select>
+                    <button type="button" onclick="openAddLocationModal('Village')" title="បន្ថែមភូមិថ្មី"
+                      class="px-3 py-2 bg-pink-100 hover:bg-pink-200 text-pink-700 rounded-xl font-bold text-sm transition">
+                      [+]
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Note / Memo -->
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1">កំណត់សម្គាល់បន្ថែម (Note)</label>
+              <textarea id="gift-note" rows="2" placeholder="ព័ត៌មានបន្ថែម..."
+                class="w-full px-3.5 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm"></textarea>
+            </div>
+
+            <!-- Form Submit Buttons -->
+            <div class="flex justify-end gap-3 pt-2">
+              <button type="button" onclick="resetGiftForm()" class="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-semibold transition">
+                សម្អាត (Clear)
+              </button>
+              <button type="submit" id="gift-form-submit-btn" class="px-6 py-2.5 bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white font-semibold rounded-xl shadow-lg shadow-pink-200 transition text-sm">
+                រក្សាទុកចំណងដៃ
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW 3: GIFTS TABLE LIST                   -->
+      <!-- ========================================== -->
+      <section id="gifts-table-view" class="hidden space-y-4">
+        
+        <!-- Table Control Toolbar -->
+        <div class="bg-white p-5 rounded-3xl shadow-sm border border-pink-100 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="w-full md:w-80 relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-gray-400 text-xs"></i>
+            <input type="text" id="gift-search-input" placeholder="ស្វែងរកតាមឈ្មោះ, ខេត្ត, ទំនាក់ទំនង..." 
+              class="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-xs sm:text-sm">
+          </div>
+
+          <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+            <!-- Filter by Guest Side -->
+            <select id="gift-side-filter" class="w-full sm:w-auto px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-pink-500">
+              <option value="all">ភ្ញៀវទាំងអស់ (ខាងប្រុស & ខាងស្រី)</option>
+              <option value="ខាងប្រុស">ខាងប្រុស</option>
+              <option value="ខាងស្រី">ខាងស្រី</option>
+            </select>
+
+            <!-- Filter by Status -->
+            <select id="gift-status-filter" class="w-full sm:w-auto px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-pink-500">
+              <option value="all">ស្ថានភាពទាំងអស់</option>
+              <option value="ជំពាក់ដៃយើង">ជំពាក់ដៃយើង</option>
+              <option value="ជំពាក់គេ">ជំពាក់គេ</option>
+              <option value="សងដៃរួច">សងដៃរួច</option>
+            </select>
+
+            <!-- Filter by Currency -->
+            <select id="gift-currency-filter" class="w-full sm:w-auto px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-pink-500">
+              <option value="all">រូបិយប័ណ្ណទាំងអស់</option>
+              <option value="USD">USD ($)</option>
+              <option value="KHR">KHR (៛)</option>
+            </select>
+
+            <!-- Export Wedding Souvenir Book Button -->
+            <button type="button" onclick="openExportBookModal()" class="w-full sm:w-auto px-3.5 py-2 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center justify-center gap-1.5" title="រៀបចំ និងបោះពុម្ពជាសៀវភៅ">
+              <i class="fa-solid fa-book-open"></i>
+              <span>Export សៀវភៅ</span>
+            </button>
+
+            <!-- Export to Excel Button -->
+            <button type="button" onclick="exportGiftsToExcel()" class="w-full sm:w-auto px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center justify-center gap-1.5" title="ទាញយកជា Excel (CSV)">
+              <i class="fa-solid fa-file-excel"></i>
+              <span>Excel</span>
+            </button>
+
+            <!-- Add Gift Button -->
+            <button onclick="switchView('gift-entry-view')" class="w-full sm:w-auto px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-semibold shadow-md transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-plus"></i>
+              <span>បន្ថែមចំណងដៃ</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Gifts Table Content -->
+        <div class="bg-white rounded-3xl shadow-sm border border-pink-100 overflow-hidden">
+          <div class="px-4 sm:px-6 py-3 border-b border-gray-100 flex items-center justify-between bg-pink-50/20">
+            <span class="text-xs font-bold text-gray-600" id="gift-filter-count">បង្ហាញ 0 នៃចំណងដៃសរុប 0</span>
+          </div>
+
+          <!-- Desktop Table (visible on md+) -->
+          <div class="hidden md:block overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-gray-50 text-gray-600 text-xs font-bold uppercase">
+                <tr>
+                  <th class="px-4 py-3.5">#</th>
+                  <th class="px-4 py-3.5">ឈ្មោះភ្ញៀវ</th>
+                  <th class="px-4 py-3.5">ចំនួនទឹកប្រាក់</th>
+                  <th class="px-4 py-3.5">ស្ថានភាព</th>
+                  <th class="px-4 py-3.5">អាសយដ្ឋាន/ទីតាំង</th>
+                  <th class="px-4 py-3.5">ចំណាំ</th>
+                  <th class="px-4 py-3.5">កាលបរិច្ឆេទ</th>
+                  <th class="px-4 py-3.5 text-right">សកម្មភាព</th>
+                </tr>
+              </thead>
+              <tbody id="gifts-table-body" class="divide-y divide-gray-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile Cards List (visible on small screens / phones) -->
+          <div id="gifts-mobile-list" class="block md:hidden divide-y divide-gray-100">
+            <!-- Dynamically populated for mobile -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW 4: EXPENSE ENTRY FORM                 -->
+      <!-- ========================================== -->
+      <section id="expense-entry-view" class="hidden">
+        <div class="max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-amber-100">
+          
+          <div class="flex items-center justify-between border-b border-amber-100 pb-4 mb-6">
+            <div>
+              <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-receipt text-amber-500"></i>
+                <span id="expense-form-heading">កត់ត្រាការចំណាយ (Expense Entry Form)</span>
+              </h2>
+              <p class="text-xs text-gray-500">កត់ត្រាថ្លៃចំណាយផ្សេងៗ ថ្លៃសរុប ប្រាក់កក់ និងស្វ័យគណនាប្រាក់នៅសល់</p>
+            </div>
+            <button id="expense-cancel-edit-btn" type="button" class="hidden px-3 py-1.5 text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg">
+              បោះបង់ការកែប្រែ
+            </button>
+          </div>
+
+          <form id="expense-form" class="space-y-5">
+            
+            <!-- Expense Category Dropdown + Dynamic [+] Button -->
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1">
+                ឈ្មោះចំណាយ (Expense Name / Category) <span class="text-rose-500">*</span>
+              </label>
+              <div class="flex gap-2">
+                <select id="expense-name" required class="flex-1 px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm bg-white font-medium">
+                  <option value="">-- ជ្រើសរើសឈ្មោះចំណាយ --</option>
+                </select>
+                <button type="button" onclick="openAddCategoryModal()" title="បន្ថែមឈ្មោះចំណាយថ្មី"
+                  class="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-xl font-bold text-sm transition flex items-center gap-1">
+                  <i class="fa-solid fa-plus"></i> បន្ថែមឈ្មោះ
+                </button>
+              </div>
+            </div>
+
+            <!-- Calculation Row: Total, Deposit, Balance -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-amber-50/50 rounded-2xl border border-amber-100">
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                  ថ្លៃសរុប (Total Amount) <span class="text-rose-500">*</span>
+                </label>
+                <input type="number" step="any" id="expense-total" required placeholder="0"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-bold text-gray-900">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">ប្រាក់កក់ (Deposit)</label>
+                <input type="number" step="any" id="expense-deposit" placeholder="0"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-semibold text-emerald-700">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                  ប្រាក់នៅសល់ (Balance - Auto) <i class="fa-solid fa-calculator text-amber-500 ml-1"></i>
+                </label>
+                <input type="number" step="any" id="expense-balance" readonly placeholder="0"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-amber-200 bg-amber-100/50 text-sm font-bold text-rose-600 cursor-not-allowed">
+              </div>
+            </div>
+
+            <!-- Currency, Date, Payment Method -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">រូបិយប័ណ្ណ (Currency)</label>
+                <select id="expense-currency" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm bg-white font-semibold">
+                  <option value="USD">USD ($ - ដុល្លារ)</option>
+                  <option value="KHR">KHR (៛ - រៀល)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">កាលបរិច្ឆេទ (Date)</label>
+                <input type="date" id="expense-date" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm bg-white">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">វិធីទូទាត់ (Payment Method)</label>
+                <select id="expense-payment-method" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm bg-white">
+                  <option value="សាច់ប្រាក់">សាច់ប្រាក់ (Cash)</option>
+                  <option value="ABA Bank">ABA Bank</option>
+                  <option value="ACLEDA">ACLEDA Bank</option>
+                  <option value="Canadia">Canadia Bank</option>
+                  <option value="Wing">Wing</option>
+                  <option value="ផ្សេងៗ">ផ្សេងៗ</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Note / Memo -->
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1">កំណត់សម្គាល់ (Note)</label>
+              <textarea id="expense-note" rows="2" placeholder="ព័ត៌មានលម្អិតអំពីការចំណាយ..."
+                class="w-full px-3.5 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"></textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end gap-3 pt-2">
+              <button type="button" onclick="resetExpenseForm()" class="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-semibold transition">
+                សម្អាត (Clear)
+              </button>
+              <button type="submit" id="expense-form-submit-btn" class="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-700 hover:to-yellow-600 text-white font-semibold rounded-xl shadow-lg shadow-amber-200 transition text-sm">
+                រក្សាទុកការចំណាយ
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW 5: EXPENSES TABLE LIST                -->
+      <!-- ========================================== -->
+      <section id="expenses-table-view" class="hidden space-y-4">
+        
+        <!-- Toolbar -->
+        <div class="bg-white p-5 rounded-3xl shadow-sm border border-amber-100 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="w-full md:w-80 relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-gray-400 text-xs"></i>
+            <input type="text" id="expense-search-input" placeholder="ស្វែងរកតាមឈ្មោះចំណាយ, ចំណាំ..." 
+              class="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs sm:text-sm">
+          </div>
+
+          <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+            <!-- Payment Filter -->
+            <select id="expense-payment-filter" class="w-full sm:w-auto px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+              <option value="all">វិធីទូទាត់ទាំងអស់</option>
+              <option value="សាច់ប្រាក់">សាច់ប្រាក់</option>
+              <option value="ABA Bank">ABA Bank</option>
+              <option value="ACLEDA">ACLEDA Bank</option>
+            </select>
+
+            <button onclick="switchView('expense-entry-view')" class="w-full sm:w-auto px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold shadow-md transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-plus"></i>
+              <span>បន្ថែមការចំណាយ</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Expenses Table Content -->
+        <div class="bg-white rounded-3xl shadow-sm border border-amber-100 overflow-hidden">
+          <div class="px-4 sm:px-6 py-3 border-b border-gray-100 flex items-center justify-between bg-amber-50/20">
+            <span class="text-xs font-bold text-gray-600" id="expense-filter-count">បង្ហាញ 0 នៃចំណាយសរុប 0</span>
+          </div>
+
+          <!-- Desktop Table (visible on md+) -->
+          <div class="hidden md:block overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-gray-50 text-gray-600 text-xs font-bold uppercase">
+                <tr>
+                  <th class="px-4 py-3.5">#</th>
+                  <th class="px-4 py-3.5">ឈ្មោះចំណាយ</th>
+                  <th class="px-4 py-3.5">ថ្លៃសរុប</th>
+                  <th class="px-4 py-3.5">ប្រាក់កក់</th>
+                  <th class="px-4 py-3.5">ប្រាក់នៅសល់</th>
+                  <th class="px-4 py-3.5">វិធីទូទាត់</th>
+                  <th class="px-4 py-3.5">កាលបរិច្ឆេទ</th>
+                  <th class="px-4 py-3.5 text-right">សកម្មភាព</th>
+                </tr>
+              </thead>
+              <tbody id="expenses-table-body" class="divide-y divide-gray-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile Cards List (visible on small screens / phones) -->
+          <div id="expenses-mobile-list" class="block md:hidden divide-y divide-gray-100">
+            <!-- Dynamically populated for mobile -->
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-pink-100 py-4 mb-16 md:mb-0 text-center text-xs text-gray-400">
+      Wedding Gift & Expense Management System &copy; 2026 | រៀបចំដោយស្វ័យប្រវត្តិសម្រាប់ PEUNG VIREAK
+    </footer>
+
+    <!-- Mobile Bottom Navigation Bar (Visible only on mobile screens) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-pink-100 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] px-2 py-1.5 flex items-center justify-around">
+      <button class="bottom-nav-btn active flex flex-col items-center justify-center flex-1 py-1 text-pink-600 transition" data-view="dashboard-view">
+        <i class="fa-solid fa-chart-pie text-lg"></i>
+        <span class="text-[10px] font-medium mt-0.5">ទំព័រដើម</span>
+      </button>
+
+      <button class="bottom-nav-btn flex flex-col items-center justify-center flex-1 py-1 text-gray-400 transition" data-view="gift-entry-view">
+        <i class="fa-solid fa-envelope-open-text text-lg"></i>
+        <span class="text-[10px] font-medium mt-0.5">កត់ចំណងដៃ</span>
+      </button>
+
+      <button class="bottom-nav-btn flex flex-col items-center justify-center flex-1 py-1 text-gray-400 transition" data-view="gifts-table-view">
+        <i class="fa-solid fa-table-list text-lg"></i>
+        <span class="text-[10px] font-medium mt-0.5">តារាងចំណងដៃ</span>
+      </button>
+
+      <button class="bottom-nav-btn flex flex-col items-center justify-center flex-1 py-1 text-gray-400 transition" data-view="expense-entry-view">
+        <i class="fa-solid fa-receipt text-lg"></i>
+        <span class="text-[10px] font-medium mt-0.5">កត់ចំណាយ</span>
+      </button>
+
+      <button class="bottom-nav-btn flex flex-col items-center justify-center flex-1 py-1 text-gray-400 transition" data-view="expenses-table-view">
+        <i class="fa-solid fa-file-invoice-dollar text-lg"></i>
+        <span class="text-[10px] font-medium mt-0.5">តារាងចំណាយ</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: [+] ADD LOCATION DYNAMICALLY                      -->
+  <!-- ======================================================== -->
+  <div id="location-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-pink-100">
+      
+      <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+        <h3 id="location-modal-title" class="text-base font-bold text-gray-800">[+] បន្ថែមទីតាំងថ្មី</h3>
+        <button type="button" onclick="closeLocationModal()" class="text-gray-400 hover:text-gray-600 text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="location-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">ប្រភេទទីតាំង (Location Type)</label>
+          <select id="modal-loc-type" disabled class="w-full px-3.5 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm font-semibold">
+            <option value="Province">ខេត្ត/រាជធានី (Province)</option>
+            <option value="District">ស្រុក/ខណ្ឌ (District)</option>
+            <option value="Commune">ឃុំ/សង្កាត់ (Commune)</option>
+            <option value="Village">ភូមិ (Village)</option>
+          </select>
+        </div>
+
+        <div id="modal-loc-parent-container">
+          <label class="block text-xs font-semibold text-gray-700 mb-1">ទីតាំងមេ (Parent Location)</label>
+          <select id="modal-loc-parent" class="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm bg-white font-medium">
+            <!-- Dynamically populated based on type -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">
+            ឈ្មោះទីតាំងជាភាសាខ្មែរ <span class="text-rose-500">*</span>
+          </label>
+          <input type="text" id="modal-loc-name" required placeholder="ឧ. ក្រុងពោធិ៍សាត់ ឬ ភូមិត្រពាំងជង"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm">
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeLocationModal()" class="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 text-xs font-semibold hover:bg-gray-50">
+            បោះបង់
+          </button>
+          <button type="submit" class="px-5 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-semibold shadow-md transition">
+            បន្ថែមទីតាំងថ្មី
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: [+] ADD EXPENSE CATEGORY DYNAMICALLY              -->
+  <!-- ======================================================== -->
+  <div id="category-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-amber-100">
+      
+      <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+        <h3 class="text-base font-bold text-gray-800 flex items-center gap-2">
+          <i class="fa-solid fa-tags text-amber-500"></i>
+          <span>[+] បន្ថែមឈ្មោះចំណាយថ្មី</span>
+        </h3>
+        <button type="button" onclick="closeAddCategoryModal()" class="text-gray-400 hover:text-gray-600 text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="category-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">
+            ឈ្មោះចំណាយជាភាសាខ្មែរ (Expense Name) <span class="text-rose-500">*</span>
+          </label>
+          <input type="text" id="modal-category-name" required placeholder="ឧ. ថ្លៃផ្កាស្រស់, ថ្លៃភ្លេងការ, ថ្លៃនំអន្សម..."
+            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm">
+          <p class="text-[11px] text-gray-400 mt-1">ឈ្មោះនេះនឹងបង្ហាញក្នុងបញ្ជីជ្រើសរើស (Dropdown) ដោយស្វ័យប្រវត្តិ។</p>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeAddCategoryModal()" class="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 text-xs font-semibold hover:bg-gray-50">
+            បោះបង់
+          </button>
+          <button type="submit" class="px-5 py-2 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-700 hover:to-yellow-600 text-white rounded-xl text-xs font-semibold shadow-md transition">
+            បន្ថែមឈ្មោះចំណាយ
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: SETTINGS & GOOGLE SHEETS SETUP                    -->
+  <!-- ======================================================== -->
+  <div id="settings-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-7 w-full max-w-lg shadow-2xl border border-pink-100">
+      
+      <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+        <h3 class="text-base font-bold text-gray-800 flex items-center gap-2">
+          <i class="fa-solid fa-gear text-pink-600"></i> ការកំណត់ប្រព័ន្ធ & Google Sheets API
+        </h3>
+        <button type="button" onclick="closeSettingsModal()" class="text-gray-400 hover:text-gray-600 text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div class="p-3 bg-pink-50 rounded-2xl border border-pink-100 text-xs text-pink-900 leading-relaxed">
+          <p class="font-bold mb-1">🔗 Google Sheet ID:</p>
+          <code class="bg-white px-2 py-0.5 rounded border border-pink-200 text-pink-700 font-mono select-all">1hYuqL3CCHMCpjiV_x2UTIFzjOoC66GZsxW03NpafrU0</code>
+        </div>
+
+        <form id="settings-form" class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">
+              Google Apps Script Web App URL:
+            </label>
+            <input type="url" id="settings-api-url" value="https://script.google.com/macros/s/AKfycbwP4DvJEyBDOX3qMZsd-p-LSHDml65wwFMm5CS3yq4s6EwvdNjhaRp-t2mF7DgwNxmT/exec" placeholder="https://script.google.com/macros/s/.../exec"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-xs font-mono">
+            <span class="text-[11px] text-gray-400 mt-1 block">ចម្លង URL ដែលបានពីការ Deploy Apps Script មកបិទភ្ជាប់ត្រង់នេះ។</span>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="submit" class="px-5 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-semibold shadow-md transition">
+              រក្សាទុក URL
+            </button>
+          </div>
+        </form>
+
+        <div class="border-t border-gray-100 pt-4">
+          <p class="text-xs font-bold text-gray-700 mb-2">⚡ ការរៀបចំ Database ស្វ័យប្រវត្តិ (One-Click Setup):</p>
+          <button type="button" onclick="triggerDatabaseSetup()" class="w-full py-2.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white font-semibold rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>ចុចត្រង់នេះដើម្បីបង្កើត Sheets ទាំង ៤ និង Users ដោយស្វ័យប្រវត្តិ</span>
+          </button>
+          <p class="text-[11px] text-gray-400 mt-1.5 text-center">ដំណើរការ Setup លើ Google Sheets ដោយមិនបាច់បើក Editor ក៏បាន (ក្រោយពេលដាក់ URL រួច)។</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: LOGOUT CONFIRMATION (NO BROWSER POPUP)            -->
+  <!-- ======================================================== -->
+  <div id="logout-confirm-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-rose-100 text-center">
+      
+      <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center text-2xl shadow-inner">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </div>
+
+      <h3 class="text-lg font-bold text-gray-900 mb-1">ចាកចេញពីប្រព័ន្ធ</h3>
+      <p class="text-xs text-gray-500 mb-6">តើបងពិតជាចង់ចាកចេញពីប្រព័ន្ធមែនទេ?</p>
+
+      <div class="flex gap-3">
+        <button type="button" onclick="closeLogoutModal()" class="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold text-xs hover:bg-gray-50 transition">
+          បោះបង់
+        </button>
+        <button type="button" onclick="confirmLogoutAction()" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-semibold text-xs shadow-md shadow-rose-200 transition">
+          ចាកចេញ (Logout)
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: CHANGE PASSWORD                                   -->
+  <!-- ======================================================== -->
+  <div id="change-password-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-pink-100">
+      
+      <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+        <h3 class="text-base font-bold text-gray-800 flex items-center gap-2">
+          <i class="fa-solid fa-key text-pink-500"></i>
+          <span>ផ្លាស់ប្តូរលេខសម្ងាត់ (Change Password)</span>
+        </h3>
+        <button type="button" onclick="closeChangePasswordModal()" class="text-gray-400 hover:text-gray-600 text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="change-password-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">
+            ឈ្មោះគណនី (Username) <span class="text-rose-500">*</span>
+          </label>
+          <input type="text" id="cp-username" required placeholder="admin ឬ wife"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">
+            លេខសម្ងាត់ចាស់ (Current Password) <span class="text-rose-500">*</span>
+          </label>
+          <div class="relative">
+            <input type="password" id="cp-old-password" required placeholder="••••••••"
+              class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500">
+            <button type="button" onclick="togglePasswordVisibility('cp-old-password', 'cp-old-eye')" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 text-xs">
+              <i id="cp-old-eye" class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">
+            លេខសម្ងាត់ថ្មី (New Password) <span class="text-rose-500">*</span>
+          </label>
+          <div class="relative">
+            <input type="password" id="cp-new-password" required placeholder="យ៉ាងតិច ៣ តួ"
+              class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500">
+            <button type="button" onclick="togglePasswordVisibility('cp-new-password', 'cp-new-eye')" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 text-xs">
+              <i id="cp-new-eye" class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">
+            ផ្ទៀងផ្ទាត់លេខសម្ងាត់ថ្មី (Confirm New Password) <span class="text-rose-500">*</span>
+          </label>
+          <div class="relative">
+            <input type="password" id="cp-confirm-password" required placeholder="វាយលេខសម្ងាត់ថ្មីម្តងទៀត"
+              class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500">
+            <button type="button" onclick="togglePasswordVisibility('cp-confirm-password', 'cp-confirm-eye')" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 text-xs">
+              <i id="cp-confirm-eye" class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="closeChangePasswordModal()" class="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-xs font-semibold hover:bg-gray-50 transition">
+            បោះបង់
+          </button>
+          <button type="submit" id="cp-submit-btn" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white text-xs font-semibold shadow-md shadow-pink-200 transition">
+            រក្សាទុកលេខសម្ងាត់
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: EXPORT WEDDING SOUVENIR BOOK                      -->
+  <!-- ======================================================== -->
+  <div id="export-book-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
+    <div id="export-book-modal-card" class="bg-white rounded-3xl w-full max-w-4xl shadow-2xl border border-pink-100 flex flex-col max-h-[95vh] my-auto">
+      
+      <!-- Modal Header (Hidden on print) -->
+      <div id="export-book-modal-header" class="px-5 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-pink-50 via-rose-50 to-amber-50 rounded-t-3xl">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-rose-500 text-white flex items-center justify-center shadow-md shadow-amber-200">
+            <i class="fa-solid fa-book-open text-base"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-gray-900 leading-tight">រៀបចំ និងបោះពុម្ពសៀវភៅចំណងដៃ</h3>
+            <p class="text-xs text-pink-600">Wedding Gift Souvenir Book (A4 Print & PDF)</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeExportBookModal()" class="text-gray-400 hover:text-gray-600 text-xl p-1">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Controls Toolbar (Hidden on print) -->
+      <div id="export-book-modal-controls" class="px-5 sm:px-6 py-3 border-b border-gray-100 bg-gray-50/50 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <span class="font-bold text-gray-600"><i class="fa-solid fa-filter mr-1 text-pink-500"></i> រៀបចំតាម៖</span>
+          
+          <select id="book-side-filter" onchange="renderBookPreview()" class="px-3 py-1.5 rounded-xl border border-gray-200 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-pink-500">
+            <option value="all">ភ្ញៀវទាំងអស់ (ខាងប្រុស & ខាងស្រី)</option>
+            <option value="ខាងប្រុស">ភ្ញៀវខាងប្រុសតែប៉ុណ្ណោះ</option>
+            <option value="ខាងស្រី">ភ្ញៀវខាងស្រីតែប៉ុណ្ណោះ</option>
+          </select>
+
+          <select id="book-sort-filter" onchange="renderBookPreview()" class="px-3 py-1.5 rounded-xl border border-gray-200 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-pink-500">
+            <option value="time-asc">តាមលំដាប់កត់ត្រា (ចាស់មុន)</option>
+            <option value="time-desc">តាមលំដាប់កត់ត្រា (ថ្មីមុន)</option>
+            <option value="name">តាមឈ្មោះភ្ញៀវ (ក-អ)</option>
+            <option value="amount-desc">តាមទឹកប្រាក់ (ច្រើនទៅតិច)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <button type="button" onclick="exportGiftsToExcel()" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow transition flex items-center gap-1.5">
+            <i class="fa-solid fa-file-excel"></i>
+            <span>ទាញយក Excel</span>
+          </button>
+          <button type="button" onclick="printWeddingBook()" class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white text-xs font-bold shadow-md shadow-pink-200 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-print"></i>
+            <span>បោះពុម្ព / Save PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Book Preview Content Area (Scrollable on screen, Full width on print) -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-100/50">
+        <div id="printable-book-area" class="bg-white mx-auto shadow-md p-6 sm:p-10 rounded-2xl max-w-3xl border border-pink-100 font-sans">
+          <!-- Dynamically populated by renderBookPreview() -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- Global Loading Spinner -->
+  <div id="global-loader" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-[2px]">
+    <div class="bg-white/95 px-6 py-4 rounded-2xl shadow-xl flex items-center space-x-3 border border-pink-100">
+      <div class="w-6 h-6 border-3 border-pink-600 border-t-transparent rounded-full animate-spin"></div>
+      <span class="text-xs font-semibold text-gray-700">កំពុងដំណើរការទិន្នន័យ...</span>
+    </div>
+  </div>
+
+  <!-- Core JavaScript -->
+  <script src="js/app.js"></script>
+</body>
+</html>
+
