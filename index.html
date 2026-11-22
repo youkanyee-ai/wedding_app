@@ -1015,7 +1015,7 @@
   <!-- ======================================================== -->
   <!-- MODAL: [+] ADD LOCATION DYNAMICALLY                      -->
   <!-- ======================================================== -->
-  <div id="location-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+  <div id="location-modal" class="hidden fixed inset-0 z-[70] items-center justify-center bg-black/40 backdrop-blur-sm p-4">
     <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-pink-100">
       
       <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
@@ -1353,11 +1353,27 @@
 
         <!-- 2. Address / Location -->
         <div>
-          <label class="block text-xs font-semibold text-gray-700 mb-1">
-            អាស័យដ្ឋាន (Address / ទីតាំង)
-          </label>
-          <input type="text" id="inv-address" placeholder="ឧ. រាជធានីភ្នំពេញ ឬ ភូមិត្រពាំងជង ពោធិ៍សាត់"
-            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm">
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-semibold text-gray-700">
+              អាស័យដ្ឋាន (Address / ទីតាំង)
+            </label>
+            <button type="button" onclick="openAddressPickerModal()" class="text-xs text-pink-600 hover:text-pink-700 font-bold flex items-center gap-1 hover:underline cursor-pointer">
+              <i class="fa-solid fa-plus-circle"></i> + បន្ថែម/ជ្រើសរើសទីតាំង
+            </button>
+          </div>
+          <div class="flex gap-1.5">
+            <div class="relative flex-1">
+              <input type="text" id="inv-address" list="inv-address-datalist" placeholder="ឧ. រាជធានីភ្នំពេញ ឬ ភូមិត្រពាំងជង ពោធិ៍សាត់"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm font-medium">
+              <datalist id="inv-address-datalist"></datalist>
+            </div>
+            <button type="button" onclick="openAddressPickerModal()" title="បន្ថែម ឬជ្រើសរើសទីតាំងថ្មី"
+              class="px-3.5 py-2.5 bg-pink-100 hover:bg-pink-200 text-pink-700 rounded-xl font-bold text-sm transition flex items-center justify-center gap-1 cursor-pointer">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+          <!-- Quick location tags -->
+          <div id="inv-quick-addresses" class="flex flex-wrap items-center gap-1.5 mt-2"></div>
         </div>
 
         <!-- 3. Row: Debt Status & Invited Via -->
@@ -1423,7 +1439,119 @@
     </div>
   </div>
 
-  <!-- Toast Notification Container -->
+  <!-- ======================================================== -->
+  <!-- MODAL: [+] ADD / SELECT ADDRESS (អាស័យដ្ឋាន / ទីតាំង)     -->
+  <!-- ======================================================== -->
+  <div id="address-picker-modal" class="hidden fixed inset-0 z-[60] items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl border border-pink-100 my-auto animate-scale-up max-h-[90vh] overflow-y-auto">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-2xl bg-pink-100 text-pink-600 flex items-center justify-center text-base">
+            <i class="fa-solid fa-location-dot"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-gray-900">[+] ជ្រើសរើស ឬបន្ថែមអាស័យដ្ឋានថ្មី</h3>
+            <p class="text-[11px] text-gray-500">ជ្រើសរើសពីប្រព័ន្ធភូមិសាស្ត្រ ឬវាយបញ្ចូលឈ្មោះទីតាំងថ្មី</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeAddressPickerModal()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-400 hover:text-gray-600 flex items-center justify-center transition cursor-pointer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        
+        <!-- Method 1: Type New Custom Address -->
+        <div class="p-4 bg-gradient-to-br from-pink-50/60 to-rose-50/40 rounded-2xl border border-pink-100 space-y-2.5">
+          <label class="block text-xs font-bold text-pink-900 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="fa-solid fa-pen-to-square text-pink-500"></i>
+            <span>វិធីទី ១៖ បន្ថែមឈ្មោះទីតាំងថ្មីភ្លាមៗ (Quick Custom Address)</span>
+          </label>
+          <div class="flex gap-2">
+            <input type="text" id="picker-custom-address" placeholder="ឧ. ភូមិត្រពាំងជង ពោធិ៍សាត់ ឬ បុរីប៉េងហួត"
+              class="flex-1 px-3.5 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm bg-white font-medium">
+            <button type="button" onclick="saveCustomAddressFromPicker()"
+              class="px-4 py-2.5 bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white rounded-xl font-bold text-xs shadow-md shadow-pink-200 transition flex items-center gap-1 whitespace-nowrap cursor-pointer">
+              <i class="fa-solid fa-check"></i>
+              <span>រក្សាទុក & យក</span>
+            </button>
+          </div>
+          <p class="text-[11px] text-gray-500">អាស័យដ្ឋាននេះនឹងត្រូវរក្សាទុកក្នុងបញ្ជីជម្រើសសម្រាប់ប្រើលើកក្រោយៗទៀត។</p>
+        </div>
+
+        <!-- Method 2: Cascading Geographic Selector -->
+        <div class="p-4 bg-gray-50 rounded-2xl border border-gray-200/70 space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-map-location-dot text-indigo-500"></i>
+              <span>វិធីទី ២៖ ជ្រើសរើសតាមលំដាប់ភូមិសាស្ត្រ</span>
+            </label>
+            <span class="text-[11px] text-gray-500">២៥ ខេត្ត/រាជធានី</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-semibold text-gray-600 mb-1">ខេត្ត/រាជធានី (Province)</label>
+              <select id="picker-province" onchange="onPickerProvinceChange()" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white font-medium focus:ring-2 focus:ring-pink-500">
+                <option value="">-- ជ្រើសរើសខេត្ត/ក្រុង --</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-gray-600 mb-1">ស្រុក/ខណ្ឌ (District)</label>
+              <select id="picker-district" onchange="onPickerDistrictChange()" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white font-medium focus:ring-2 focus:ring-pink-500">
+                <option value="">-- ជ្រើសរើសស្រុក/ខណ្ឌ --</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-gray-600 mb-1">ឃុំ/សង្កាត់ (Commune)</label>
+              <select id="picker-commune" onchange="onPickerCommuneChange()" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white font-medium focus:ring-2 focus:ring-pink-500">
+                <option value="">-- ជ្រើសរើសឃុំ/សង្កាត់ --</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-gray-600 mb-1">ភូមិ (Village)</label>
+              <select id="picker-village" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white font-medium focus:ring-2 focus:ring-pink-500">
+                <option value="">-- ជ្រើសរើសភូមិ --</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex justify-end pt-1">
+            <button type="button" onclick="applyCascadingAddress()"
+              class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-location-arrow"></i>
+              <span>យកទីតាំងដែលបានជ្រើសនេះ</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Saved Addresses History List -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1.5">
+            <i class="fa-solid fa-clock-rotate-left mr-1 text-gray-400"></i>
+            អាស័យដ្ឋានដែលធ្លាប់បានប្រើ / បានរក្សាទុក (Saved History):
+          </label>
+          <div id="picker-saved-addresses-list" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 bg-gray-50 rounded-xl border border-gray-100">
+            <!-- List of clickable badges -->
+          </div>
+        </div>
+
+        <!-- Footer Buttons -->
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+          <button type="button" onclick="closeAddressPickerModal()" class="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 text-xs font-semibold transition cursor-pointer">
+            បិទ
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
   <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
   <!-- Global Loading Spinner -->

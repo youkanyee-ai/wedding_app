@@ -405,6 +405,7 @@ async function fetchAllData() {
 
     populateProvinces();
     populateExpenseCategories();
+    initAddressSuggestions();
     renderDashboard();
     renderInvitationsTable();
     renderGiftsTable();
@@ -1730,6 +1731,240 @@ function getInvResponseDropdown(id, currentStatus) {
   `;
 }
 
+// ==========================================
+// INVITATION ADDRESS PICKER & SUGGESTIONS
+// ==========================================
+
+function initAddressSuggestions() {
+  const datalist = document.getElementById('inv-address-datalist');
+  const quickContainer = document.getElementById('inv-quick-addresses');
+  const modalHistoryContainer = document.getElementById('picker-saved-addresses-list');
+
+  let saved = [];
+  try {
+    saved = JSON.parse(localStorage.getItem('wedding_saved_addresses') || '[]');
+  } catch(e) {}
+
+  const defaultPresets = ['រាជធានីភ្នំពេញ', 'ពោធិ៍សាត់', 'បាត់ដំបង', 'សៀមរាប', 'កំពង់ចាម', 'កណ្តាល'];
+  const allAddresses = Array.from(new Set([
+    ...saved,
+    ...(state.locations ? state.locations.filter(l => l.type === 'Province').map(p => p.name_kh) : []),
+    ...(state.invitations ? state.invitations.map(i => i.address).filter(Boolean) : []),
+    ...defaultPresets
+  ]));
+
+  // 1. Populate Datalist
+  if (datalist) {
+    datalist.innerHTML = '';
+    allAddresses.slice(0, 50).forEach(addr => {
+      const opt = document.createElement('option');
+      opt.value = addr;
+      datalist.appendChild(opt);
+    });
+  }
+
+  // 2. Populate Quick Chips in Form
+  if (quickContainer) {
+    quickContainer.innerHTML = '';
+    const topChips = Array.from(new Set([...saved, ...defaultPresets])).slice(0, 6);
+    topChips.forEach(chip => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'px-2 py-0.5 bg-gray-100 hover:bg-pink-100 hover:text-pink-700 text-gray-600 rounded-lg text-[11px] font-medium transition cursor-pointer flex items-center gap-1';
+      btn.innerHTML = `<i class="fa-solid fa-location-dot text-[9px] text-pink-500"></i> ${escapeHtml(chip)}`;
+      btn.onclick = () => {
+        const invAddr = document.getElementById('inv-address');
+        if (invAddr) {
+          invAddr.value = chip;
+          showToast(`បានជ្រើសរើស "${chip}"`, 'info');
+        }
+      };
+      quickContainer.appendChild(btn);
+    });
+  }
+
+  // 3. Populate History in Picker Modal
+  if (modalHistoryContainer) {
+    modalHistoryContainer.innerHTML = '';
+    const historyList = Array.from(new Set([...saved, ...defaultPresets])).slice(0, 16);
+    historyList.forEach(item => {
+      const badge = document.createElement('button');
+      badge.type = 'button';
+      badge.className = 'px-2.5 py-1 bg-white hover:bg-pink-50 border border-gray-200 hover:border-pink-300 text-gray-700 hover:text-pink-700 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1';
+      badge.innerHTML = `<i class="fa-solid fa-check text-[10px] text-pink-500"></i> ${escapeHtml(item)}`;
+      badge.onclick = () => {
+        setAndSaveSelectedAddress(item);
+      };
+      modalHistoryContainer.appendChild(badge);
+    });
+  }
+}
+
+function openAddressPickerModal() {
+  populatePickerProvinces();
+  initAddressSuggestions();
+  const input = document.getElementById('picker-custom-address');
+  if (input) input.value = '';
+  const modal = document.getElementById('address-picker-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(() => {
+      input?.focus();
+    }, 50);
+  }
+}
+
+function closeAddressPickerModal() {
+  const modal = document.getElementById('address-picker-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+function populatePickerProvinces() {
+  const select = document.getElementById('picker-province');
+  if (!select) return;
+  const provinces = state.locations ? state.locations.filter(l => l.type === 'Province') : [];
+  select.innerHTML = '<option value="">-- ជ្រើសរើសខេត្ត/ក្រុង --</option>';
+  provinces.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.dataset.name = p.name_kh;
+    opt.textContent = p.name_kh;
+    select.appendChild(opt);
+  });
+
+  const distSelect = document.getElementById('picker-district');
+  if (distSelect) distSelect.innerHTML = '<option value="">-- ជ្រើសរើសស្រុក/ខណ្ឌ --</option>';
+  const comSelect = document.getElementById('picker-commune');
+  if (comSelect) comSelect.innerHTML = '<option value="">-- ជ្រើសរើសឃុំ/សង្កាត់ --</option>';
+  const vilSelect = document.getElementById('picker-village');
+  if (vilSelect) vilSelect.innerHTML = '<option value="">-- ជ្រើសរើសភូមិ --</option>';
+}
+
+function onPickerProvinceChange() {
+  const provSelect = document.getElementById('picker-province');
+  const distSelect = document.getElementById('picker-district');
+  const comSelect = document.getElementById('picker-commune');
+  const vilSelect = document.getElementById('picker-village');
+  if (!provSelect || !distSelect) return;
+
+  const provId = provSelect.value;
+  distSelect.innerHTML = '<option value="">-- ជ្រើសរើសស្រុក/ខណ្ឌ --</option>';
+  if (comSelect) comSelect.innerHTML = '<option value="">-- ជ្រើសរើសឃុំ/សង្កាត់ --</option>';
+  if (vilSelect) vilSelect.innerHTML = '<option value="">-- ជ្រើសរើសភូមិ --</option>';
+
+  if (!provId) return;
+
+  const districts = state.locations ? state.locations.filter(l => l.type === 'District' && l.parent_id === provId) : [];
+  districts.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d.id;
+    opt.dataset.name = d.name_kh;
+    opt.textContent = d.name_kh;
+    distSelect.appendChild(opt);
+  });
+}
+
+function onPickerDistrictChange() {
+  const distSelect = document.getElementById('picker-district');
+  const comSelect = document.getElementById('picker-commune');
+  const vilSelect = document.getElementById('picker-village');
+  if (!distSelect || !comSelect) return;
+
+  const distId = distSelect.value;
+  comSelect.innerHTML = '<option value="">-- ជ្រើសរើសឃុំ/សង្កាត់ --</option>';
+  if (vilSelect) vilSelect.innerHTML = '<option value="">-- ជ្រើសរើសភូមិ --</option>';
+
+  if (!distId) return;
+
+  const communes = state.locations ? state.locations.filter(l => l.type === 'Commune' && l.parent_id === distId) : [];
+  communes.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.dataset.name = c.name_kh;
+    opt.textContent = c.name_kh;
+    comSelect.appendChild(opt);
+  });
+}
+
+function onPickerCommuneChange() {
+  const comSelect = document.getElementById('picker-commune');
+  const vilSelect = document.getElementById('picker-village');
+  if (!comSelect || !vilSelect) return;
+
+  const comId = comSelect.value;
+  vilSelect.innerHTML = '<option value="">-- ជ្រើសរើសភូមិ --</option>';
+
+  if (!comId) return;
+
+  const villages = state.locations ? state.locations.filter(l => l.type === 'Village' && l.parent_id === comId) : [];
+  villages.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v.id;
+    opt.dataset.name = v.name_kh;
+    opt.textContent = v.name_kh;
+    vilSelect.appendChild(opt);
+  });
+}
+
+function applyCascadingAddress() {
+  const provSelect = document.getElementById('picker-province');
+  const distSelect = document.getElementById('picker-district');
+  const comSelect = document.getElementById('picker-commune');
+  const vilSelect = document.getElementById('picker-village');
+
+  const prov = provSelect && provSelect.selectedIndex > 0 ? provSelect.options[provSelect.selectedIndex].text : '';
+  const dist = distSelect && distSelect.selectedIndex > 0 ? distSelect.options[distSelect.selectedIndex].text : '';
+  const com = comSelect && comSelect.selectedIndex > 0 ? comSelect.options[comSelect.selectedIndex].text : '';
+  const vil = vilSelect && vilSelect.selectedIndex > 0 ? vilSelect.options[vilSelect.selectedIndex].text : '';
+
+  const parts = [];
+  if (vil) parts.push(`ភូមិ${vil}`);
+  if (com) parts.push(`ឃុំ/សង្កាត់${com}`);
+  if (dist) parts.push(`ស្រុក/ខណ្ឌ${dist}`);
+  if (prov) parts.push(prov.startsWith('រាជធានី') || prov.startsWith('ខេត្ត') ? prov : `ខេត្ត${prov}`);
+
+  const formatted = parts.join(' ');
+  if (!formatted) {
+    showToast('សូមជ្រើសរើសខេត្ត/ក្រុង ឬទីតាំងណាមួយ!', 'warning');
+    return;
+  }
+
+  setAndSaveSelectedAddress(formatted);
+}
+
+function saveCustomAddressFromPicker() {
+  const input = document.getElementById('picker-custom-address');
+  const val = input ? input.value.trim() : '';
+  if (!val) {
+    showToast('សូមវាយបញ្ចូលឈ្មោះទីតាំង!', 'warning');
+    return;
+  }
+  setAndSaveSelectedAddress(val);
+}
+
+function setAndSaveSelectedAddress(addr) {
+  const invAddr = document.getElementById('inv-address');
+  if (invAddr) invAddr.value = addr;
+
+  let saved = [];
+  try {
+    saved = JSON.parse(localStorage.getItem('wedding_saved_addresses') || '[]');
+  } catch(e) {}
+  if (!saved.includes(addr)) {
+    saved.unshift(addr);
+    if (saved.length > 30) saved = saved.slice(0, 30);
+    localStorage.setItem('wedding_saved_addresses', JSON.stringify(saved));
+  }
+
+  initAddressSuggestions();
+  closeAddressPickerModal();
+  showToast(`បានជ្រើសរើសទីតាំង "${addr}"`, 'success');
+}
+
 function openAddInvitationModal() {
   const form = document.getElementById('invitation-form');
   if (form) form.reset();
@@ -1740,6 +1975,8 @@ function openAddInvitationModal() {
   if (submitBtn) submitBtn.textContent = 'រក្សាទុក';
   const editIdInput = document.getElementById('inv-edit-id');
   if (editIdInput) editIdInput.value = '';
+
+  initAddressSuggestions();
 
   const modal = document.getElementById('invitation-modal');
   if (modal) {
@@ -1766,6 +2003,8 @@ function editInvitation(id) {
   state.editingInvitationId = id;
   const editIdInput = document.getElementById('inv-edit-id');
   if (editIdInput) editIdInput.value = id;
+
+  initAddressSuggestions();
 
   document.getElementById('inv-guest-name').value = inv.guest_name || '';
   document.getElementById('inv-address').value = inv.address || '';
@@ -2491,7 +2730,7 @@ function initEventListeners() {
   if (changePassForm) changePassForm.addEventListener('submit', handleChangePasswordSubmit);
 
   // Close modals when clicking backdrop
-  ['location-modal', 'category-modal', 'settings-modal', 'logout-confirm-modal', 'change-password-modal', 'export-book-modal', 'invitation-modal'].forEach(modalId => {
+  ['location-modal', 'category-modal', 'settings-modal', 'logout-confirm-modal', 'change-password-modal', 'export-book-modal', 'invitation-modal', 'address-picker-modal'].forEach(modalId => {
     const modalEl = document.getElementById(modalId);
     if (modalEl) {
       modalEl.addEventListener('click', (e) => {
@@ -2506,7 +2745,7 @@ function initEventListeners() {
   // Close modals on Escape key
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      ['location-modal', 'category-modal', 'settings-modal', 'logout-confirm-modal', 'change-password-modal', 'export-book-modal', 'invitation-modal'].forEach(modalId => {
+      ['location-modal', 'category-modal', 'settings-modal', 'logout-confirm-modal', 'change-password-modal', 'export-book-modal', 'invitation-modal', 'address-picker-modal'].forEach(modalId => {
         const modalEl = document.getElementById(modalId);
         if (modalEl && !modalEl.classList.contains('hidden')) {
           modalEl.classList.add('hidden');
