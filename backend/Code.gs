@@ -38,7 +38,8 @@ const SHEETS = {
   USERS: 'Users',
   GIFTS: 'Gifts',
   EXPENSES: 'Expenses',
-  LOCATIONS: 'Locations'
+  LOCATIONS: 'Locations',
+  INVITATIONS: 'Invitations'
 };
 
 /**
@@ -110,6 +111,16 @@ function setupDatabase() {
     sampleLocations.forEach(row => locSheet.appendRow(row));
   }
 
+  // 5. Invitations Sheet (បញ្ជីភ្ញៀវត្រៀមហៅ / RSVP)
+  let invSheet = ss.getSheetByName(SHEETS.INVITATIONS);
+  if (!invSheet) {
+    invSheet = ss.insertSheet(SHEETS.INVITATIONS);
+    invSheet.appendRow([
+      'id', 'guest_name', 'address', 'debt_status', 'invite_via', 
+      'response_status', 'note', 'created_at'
+    ]);
+  }
+
   return { success: true, message: "Database initialized successfully with default tables and users." };
 }
 
@@ -135,6 +146,10 @@ function doGet(e) {
 
       case 'getLocations':
         result = { success: true, data: getAllRows(SHEETS.LOCATIONS) };
+        break;
+
+      case 'getInvitations':
+        result = { success: true, data: getAllRows(SHEETS.INVITATIONS) };
         break;
 
       case 'getSummary':
@@ -224,6 +239,19 @@ function doPost(e) {
       // 5. User Security
       case 'changePassword':
         result = handleChangePassword(payload);
+        break;
+
+      // 6. Invitations Management (ភ្ញៀវត្រៀមហៅ)
+      case 'addInvitation':
+        result = handleAddInvitation(payload);
+        break;
+
+      case 'updateInvitation':
+        result = handleUpdateInvitation(payload);
+        break;
+
+      case 'deleteInvitation':
+        result = handleDeleteInvitation(payload.id);
         break;
 
       default:
@@ -514,6 +542,65 @@ function handleAddLocation(data) {
     message: "បន្ថែមទីតាំងថ្មីជោគជ័យ!", 
     data: { id: newId, parent_id: data.parent_id || '', name_kh: data.name_kh.trim(), type: data.type.trim() } 
   };
+}
+
+function handleAddInvitation(data) {
+  const ss = getSpreadsheet();
+  let sheet = ss.getSheetByName(SHEETS.INVITATIONS);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEETS.INVITATIONS);
+    sheet.appendRow(['id', 'guest_name', 'address', 'debt_status', 'invite_via', 'response_status', 'note', 'created_at']);
+  }
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const newId = 'INV_' + Utilities.getUuid().substring(0, 8);
+  const createdAt = Utilities.formatDate(new Date(), "Asia/Phnom_Penh", "yyyy-MM-dd HH:mm:ss");
+
+  const rowMap = {
+    id: newId,
+    guest_name: data.guest_name || '',
+    address: data.address || '',
+    debt_status: data.debt_status || 'ជំពាក់ដៃខ្ញុំ',
+    invite_via: data.invite_via || 'Facebook',
+    response_status: data.response_status || 'មិនទាន់ផ្ញើ',
+    note: data.note || '',
+    created_at: createdAt
+  };
+
+  const newRow = headers.map(h => rowMap[h] !== undefined ? rowMap[h] : '');
+  sheet.appendRow(newRow);
+  return { success: true, message: "រក្សាទុកភ្ញៀវត្រៀមហៅបានជោគជ័យ!", id: newId };
+}
+
+function handleUpdateInvitation(data) {
+  if (!data.id) return { success: false, message: "ID is required." };
+  const ss = getSpreadsheet();
+  const sheet = ss.getSheetByName(SHEETS.INVITATIONS);
+  if (!sheet) return { success: false, message: "Invitations sheet not found." };
+
+  const rows = sheet.getDataRange().getValues();
+  const headers = rows[0];
+  const idIndex = headers.indexOf('id');
+
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][idIndex]) === String(data.id)) {
+      const rowIndex = i + 1;
+      ['guest_name', 'address', 'debt_status', 'invite_via', 'response_status', 'note'].forEach(field => {
+        if (data[field] !== undefined) {
+          const colIdx = headers.indexOf(field);
+          if (colIdx !== -1) {
+            sheet.getRange(rowIndex, colIdx + 1).setValue(data[field]);
+          }
+        }
+      });
+      return { success: true, message: "បានកែប្រែព័ត៌មានភ្ញៀវត្រៀមហៅជោគជ័យ!" };
+    }
+  }
+  return { success: false, message: "រកមិនឃើញទិន្នន័យដែលមាន ID នេះទេ!" };
+}
+
+function handleDeleteInvitation(id) {
+  if (!id) return { success: false, message: "ID is required." };
+  return deleteRowById(SHEETS.INVITATIONS, id);
 }
 
 // ==========================================

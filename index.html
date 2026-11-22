@@ -151,6 +151,12 @@
         </button>
 
         <button class="nav-btn px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl text-gray-700 hover:bg-pink-50 transition whitespace-nowrap flex items-center space-x-2" 
+          data-view="invitations-view">
+          <i class="fa-solid fa-users-line"></i>
+          <span>ភ្ញៀវត្រៀមហៅ (RSVP)</span>
+        </button>
+
+        <button class="nav-btn px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl text-gray-700 hover:bg-pink-50 transition whitespace-nowrap flex items-center space-x-2" 
           data-view="gift-entry-view">
           <i class="fa-solid fa-gift"></i>
           <span>បញ្ចូលចំណងដៃ (Gift Entry)</span>
@@ -194,10 +200,13 @@
             <p class="text-xs text-pink-100 mt-0.5">តាមដានចំណូលចំណងដៃ ចំណាយ និងតុល្យភាពថវិកាយ៉ាងច្បាស់លាស់</p>
           </div>
           <div class="flex items-center gap-2 w-full sm:w-auto">
-            <button onclick="switchView('gift-entry-view')" class="flex-1 sm:flex-none px-3.5 py-1.5 bg-white text-pink-600 font-bold rounded-xl text-xs shadow hover:bg-pink-50 transition flex items-center justify-center gap-1">
+            <button onclick="switchView('invitations-view')" class="flex-1 sm:flex-none px-3.5 py-1.5 bg-white/20 backdrop-blur-md text-white font-bold rounded-xl text-xs hover:bg-white/30 transition flex items-center justify-center gap-1 cursor-pointer">
+              <i class="fa-solid fa-users-line"></i> ភ្ញៀវត្រៀមហៅ
+            </button>
+            <button onclick="switchView('gift-entry-view')" class="flex-1 sm:flex-none px-3.5 py-1.5 bg-white text-pink-600 font-bold rounded-xl text-xs shadow hover:bg-pink-50 transition flex items-center justify-center gap-1 cursor-pointer">
               <i class="fa-solid fa-plus"></i> កត់ចំណងដៃ
             </button>
-            <button onclick="switchView('expense-entry-view')" class="flex-1 sm:flex-none px-3.5 py-1.5 bg-white/20 backdrop-blur-md text-white font-bold rounded-xl text-xs hover:bg-white/30 transition flex items-center justify-center gap-1">
+            <button onclick="switchView('expense-entry-view')" class="flex-1 sm:flex-none px-3.5 py-1.5 bg-white/20 backdrop-blur-md text-white font-bold rounded-xl text-xs hover:bg-white/30 transition flex items-center justify-center gap-1 cursor-pointer">
               <i class="fa-solid fa-plus"></i> កត់ចំណាយ
             </button>
           </div>
@@ -342,7 +351,136 @@
       </section>
 
       <!-- ========================================== -->
-      <!-- VIEW 2: GIFT ENTRY FORM                    -->
+      <!-- VIEW: INVITATIONS (ភ្ញៀវត្រៀមហៅ & RSVP)     -->
+      <!-- ========================================== -->
+      <section id="invitations-view" class="hidden space-y-4">
+        
+        <!-- Header & Action Banner -->
+        <div class="bg-white p-5 rounded-3xl shadow-sm border border-pink-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+              <i class="fa-solid fa-users-line text-pink-500"></i>
+              <span>បញ្ជីភ្ញៀវត្រៀមហៅ & ការឆ្លើយតប (Invited Guests & RSVP)</span>
+            </h2>
+            <p class="text-xs text-gray-500 mt-0.5">តាមដានការអញ្ជើញភ្ញៀវ តាម Facebook, Telegram, Line និងស្ថានភាពឆ្លើយតប</p>
+          </div>
+          
+          <div class="flex items-center gap-2 w-full md:w-auto">
+            <button onclick="exportInvitationsToCSV()" class="flex-1 md:flex-none px-3.5 py-2 border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-file-excel text-emerald-600"></i>
+              <span>Export Excel</span>
+            </button>
+            <button onclick="openAddInvitationModal()" class="flex-1 md:flex-none px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white rounded-xl text-xs font-bold shadow-md shadow-pink-200 transition flex items-center justify-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-user-plus"></i>
+              <span>+ បន្ថែមភ្ញៀវត្រៀមហៅ</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric Summary Cards for Invitations -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-3.5">
+          <div class="bg-white p-3 sm:p-4 rounded-2xl border border-pink-100 shadow-xs">
+            <div class="text-[11px] font-bold text-gray-500 uppercase">ភ្ញៀវសរុប</div>
+            <div class="text-xl sm:text-2xl font-extrabold text-pink-600 mt-1" id="inv-count-total">0</div>
+            <div class="text-[10px] text-gray-400 mt-0.5">ត្រៀមហៅទាំងអស់</div>
+          </div>
+          <div class="bg-white p-3 sm:p-4 rounded-2xl border border-indigo-100 shadow-xs">
+            <div class="text-[11px] font-bold text-gray-500 uppercase">ជំពាក់ដៃខ្ញុំ</div>
+            <div class="text-xl sm:text-2xl font-extrabold text-indigo-600 mt-1" id="inv-count-owe-me">0</div>
+            <div class="text-[10px] text-indigo-500 mt-0.5">ធ្លាប់ចងដៃគេ</div>
+          </div>
+          <div class="bg-white p-3 sm:p-4 rounded-2xl border border-emerald-100 shadow-xs">
+            <div class="text-[11px] font-bold text-gray-500 uppercase">ចូលមើល</div>
+            <div class="text-xl sm:text-2xl font-extrabold text-emerald-600 mt-1" id="inv-count-seen">0</div>
+            <div class="text-[10px] text-emerald-500 mt-0.5">បានបើកមើលធៀប</div>
+          </div>
+          <div class="bg-white p-3 sm:p-4 rounded-2xl border border-amber-100 shadow-xs">
+            <div class="text-[11px] font-bold text-gray-500 uppercase">ចូលមើលមិនតប</div>
+            <div class="text-xl sm:text-2xl font-extrabold text-amber-600 mt-1" id="inv-count-seen-no-reply">0</div>
+            <div class="text-[10px] text-amber-600 mt-0.5">ឃើញតែមិនទាន់តប</div>
+          </div>
+          <div class="col-span-2 sm:col-span-1 bg-white p-3 sm:p-4 rounded-2xl border border-rose-100 shadow-xs">
+            <div class="text-[11px] font-bold text-gray-500 uppercase">មិនចូលមើល</div>
+            <div class="text-xl sm:text-2xl font-extrabold text-rose-600 mt-1" id="inv-count-unseen">0</div>
+            <div class="text-[10px] text-rose-500 mt-0.5">មិនទាន់បានបើក</div>
+          </div>
+        </div>
+
+        <!-- Filter Toolbar -->
+        <div class="bg-white p-4 rounded-2xl shadow-xs border border-pink-100 flex flex-col md:flex-row items-center justify-between gap-3">
+          <div class="w-full md:w-72 relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-gray-400 text-xs"></i>
+            <input type="text" id="inv-search-input" placeholder="ស្វែងរកតាមឈ្មោះ, អាស័យដ្ឋាន..." 
+              class="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-xs sm:text-sm">
+          </div>
+
+          <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+            <!-- Filter by Response Status -->
+            <select id="inv-status-filter" class="w-full sm:w-auto px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-pink-500">
+              <option value="all">ស្ថានភាពឆ្លើយតបទាំងអស់</option>
+              <option value="ចូលមើល">ចូលមើល (Seen)</option>
+              <option value="មិនចូលមើល">មិនចូលមើល (Unseen)</option>
+              <option value="ចូលមើលហើយមិនតប">ចូលមើលហើយមិនតប</option>
+              <option value="បានតប/មក">បានតប/មក (Attending)</option>
+              <option value="បានតប/មិនមក">បានតប/មិនមក (Declined)</option>
+              <option value="មិនទាន់ផ្ញើ">មិនទាន់ផ្ញើ (Not Sent)</option>
+            </select>
+
+            <!-- Filter by Invited Via -->
+            <select id="inv-via-filter" class="w-full sm:w-auto px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-pink-500">
+              <option value="all">មធ្យោបាយហៅទាំងអស់</option>
+              <option value="Facebook">Facebook</option>
+              <option value="Telegram">Telegram</option>
+              <option value="LINE">LINE</option>
+              <option value="ទូរស័ព្ទ">ទូរស័ព្ទ (Call/SMS)</option>
+              <option value="ផ្ទាល់">ផ្ទាល់ (In Person)</option>
+              <option value="ផ្សេងៗ">ផ្សេងៗ</option>
+            </select>
+
+            <!-- Filter by Debt Status -->
+            <select id="inv-debt-filter" class="w-full sm:w-auto px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-pink-500">
+              <option value="all">ជំពាក់ដៃទាំងអស់</option>
+              <option value="ជំពាក់ដៃខ្ញុំ">ជំពាក់ដៃខ្ញុំ</option>
+              <option value="ជំពាក់គេ">ជំពាក់គេ</option>
+              <option value="ភ្ញៀវទូទៅ">ភ្ញៀវទូទៅ</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Table View Content -->
+        <div class="bg-white rounded-3xl shadow-sm border border-pink-100 overflow-hidden">
+          <div class="px-4 sm:px-6 py-3 border-b border-gray-100 flex items-center justify-between bg-pink-50/20">
+            <span class="text-xs font-bold text-gray-600" id="inv-filter-count">បង្ហាញ 0 នៃភ្ញៀវសរុប 0</span>
+          </div>
+
+          <!-- Desktop Table (visible on md+) -->
+          <div class="hidden md:block overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-gray-50 text-gray-600 text-xs font-bold uppercase">
+                <tr>
+                  <th class="px-4 py-3.5">#</th>
+                  <th class="px-4 py-3.5">ឈ្មោះភ្ញៀវ</th>
+                  <th class="px-4 py-3.5">អាស័យដ្ឋាន</th>
+                  <th class="px-4 py-3.5 text-center">ស្ថានភាពជំពាក់ដៃ</th>
+                  <th class="px-4 py-3.5 text-center">ហៅតាមរយៈ</th>
+                  <th class="px-4 py-3.5 text-center">ស្ថានភាពឆ្លើយតប</th>
+                  <th class="px-4 py-3.5">កំណត់សម្គាល់</th>
+                  <th class="px-4 py-3.5 text-right">សកម្មភាព</th>
+                </tr>
+              </thead>
+              <tbody id="invitations-table-body" class="divide-y divide-gray-100">
+                <!-- Dynamically injected -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile Cards List -->
+          <div id="invitations-mobile-list" class="block md:hidden divide-y divide-gray-100">
+            <!-- Dynamically injected for mobile -->
+          </div>
+        </div>
+
+      </section>
       <!-- ========================================== -->
       <section id="gift-entry-view" class="hidden">
         <div class="max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-pink-100">
@@ -847,6 +985,11 @@
         <span class="text-[10px] font-medium mt-0.5">ទំព័រដើម</span>
       </button>
 
+      <button class="bottom-nav-btn flex flex-col items-center justify-center flex-1 py-1 text-gray-400 transition" data-view="invitations-view">
+        <i class="fa-solid fa-users-line text-lg"></i>
+        <span class="text-[10px] font-medium mt-0.5">ភ្ញៀវហៅ</span>
+      </button>
+
       <button class="bottom-nav-btn flex flex-col items-center justify-center flex-1 py-1 text-gray-400 transition" data-view="gift-entry-view">
         <i class="fa-solid fa-envelope-open-text text-lg"></i>
         <span class="text-[10px] font-medium mt-0.5">កត់ចំណងដៃ</span>
@@ -1173,6 +1316,110 @@
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: ADD / EDIT INVITATION (ភ្ញៀវត្រៀមហៅ)             -->
+  <!-- ======================================================== -->
+  <div id="invitation-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 sm:p-7 border border-pink-100 animate-in fade-in zoom-in duration-150">
+      <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-500 text-white flex items-center justify-center shadow-md shadow-pink-200">
+            <i class="fa-solid fa-user-plus text-sm"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-gray-900" id="inv-modal-title">បន្ថែមភ្ញៀវត្រៀមហៅ</h3>
+            <p class="text-[11px] text-gray-500">កត់ត្រាព័ត៌មានភ្ញៀវ និងតាមដានការឆ្លើយតប</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeInvitationModal()" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition cursor-pointer">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="invitation-form" class="space-y-4">
+        <input type="hidden" id="inv-edit-id">
+
+        <!-- 1. Guest Name -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">
+            ឈ្មោះភ្ញៀវ (Guest Name) <span class="text-rose-500">*</span>
+          </label>
+          <input type="text" id="inv-guest-name" required placeholder="ឧ. លោក សុខ ចាន់"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm font-semibold">
+        </div>
+
+        <!-- 2. Address / Location -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">
+            អាស័យដ្ឋាន (Address / ទីតាំង)
+          </label>
+          <input type="text" id="inv-address" placeholder="ឧ. រាជធានីភ្នំពេញ ឬ ភូមិត្រពាំងជង ពោធិ៍សាត់"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm">
+        </div>
+
+        <!-- 3. Row: Debt Status & Invited Via -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">
+              ស្ថានភាពជំពាក់ដៃ (Status)
+            </label>
+            <select id="inv-debt-status" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm bg-white font-medium">
+              <option value="ជំពាក់ដៃខ្ញុំ" selected>ជំពាក់ដៃខ្ញុំ (They Owe Me)</option>
+              <option value="ជំពាក់គេ">ជំពាក់គេ (I Owe Them)</option>
+              <option value="ភ្ញៀវទូទៅ">ភ្ញៀវទូទៅ (General Guest)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">
+              ហៅតាមរយៈ (Invited Via)
+            </label>
+            <select id="inv-invite-via" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm bg-white font-medium">
+              <option value="Facebook" selected>Facebook (ហ្វេសប៊ុក)</option>
+              <option value="Telegram">Telegram (តេលេក្រាម)</option>
+              <option value="LINE">LINE (ឡាញ)</option>
+              <option value="ទូរស័ព្ទ">ទូរស័ព្ទ (Call/SMS)</option>
+              <option value="ផ្ទាល់">ផ្ទាល់ (In Person / ធៀប)</option>
+              <option value="ផ្សេងៗ">ផ្សេងៗ (Other)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 4. Response Status -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">
+            ស្ថានភាពឆ្លើយតប (Response Status)
+          </label>
+          <select id="inv-response-status" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm bg-white font-semibold text-pink-700">
+            <option value="មិនទាន់ផ្ញើ">មិនទាន់ផ្ញើ (Not Sent)</option>
+            <option value="ចូលមើល" selected>ចូលមើល (Seen / Viewed)</option>
+            <option value="មិនចូលមើល">មិនចូលមើល (Not Seen / Unopened)</option>
+            <option value="ចូលមើលហើយមិនតប">ចូលមើលហើយមិនតប (Seen, No Reply)</option>
+            <option value="បានតប/មក">បានតប/មក (Attending)</option>
+            <option value="បានតប/មិនមក">បានតប/មិនមក (Declined)</option>
+          </select>
+        </div>
+
+        <!-- 5. Note -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">កំណត់សម្គាល់ (Note)</label>
+          <textarea id="inv-note" rows="2" placeholder="ព័ត៌មានបន្ថែម ឧ. គណនីហ្វេសប៊ុក, លេខទូរស័ព្ទ..."
+            class="w-full px-3.5 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm"></textarea>
+        </div>
+
+        <!-- Modal Action Buttons -->
+        <div class="flex items-center justify-end gap-2.5 pt-2">
+          <button type="button" onclick="closeInvitationModal()" class="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 text-sm font-semibold transition cursor-pointer">
+            បោះបង់
+          </button>
+          <button type="submit" id="inv-modal-submit-btn" class="px-5 py-2 bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white font-bold rounded-xl shadow-md shadow-pink-200 text-sm transition cursor-pointer">
+            រក្សាទុក
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 

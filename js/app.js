@@ -9,6 +9,7 @@ const state = {
   gifts: [],
   expenses: [],
   locations: [],
+  invitations: JSON.parse(localStorage.getItem('wedding_invitations') || '[]'),
   expenseCategories: [
     'ថ្លៃម្ហូបការ',
     'ថ្លៃរោងការ & តុ កៅអី',
@@ -26,6 +27,7 @@ const state = {
   currentView: 'dashboard',
   editingGiftId: null,
   editingExpenseId: null,
+  editingInvitationId: null,
   activeLocationTypeToAdd: 'Province'
 };
 
@@ -366,14 +368,19 @@ async function fetchAllData() {
   if (!state.apiUrl) return;
 
   try {
-    const [giftsRes, expRes, locRes] = await Promise.all([
+    const [giftsRes, expRes, locRes, invRes] = await Promise.all([
       callBackend('getGifts', 'GET'),
       callBackend('getExpenses', 'GET'),
-      callBackend('getLocations', 'GET')
+      callBackend('getLocations', 'GET'),
+      callBackend('getInvitations', 'GET')
     ]);
 
     if (giftsRes && giftsRes.success) {
       state.gifts = giftsRes.data || [];
+    }
+    if (invRes && invRes.success && Array.isArray(invRes.data)) {
+      state.invitations = invRes.data || [];
+      localStorage.setItem('wedding_invitations', JSON.stringify(state.invitations));
     }
     if (expRes && expRes.success) {
       state.expenses = expRes.data || [];
@@ -399,6 +406,7 @@ async function fetchAllData() {
     populateProvinces();
     populateExpenseCategories();
     renderDashboard();
+    renderInvitationsTable();
     renderGiftsTable();
     renderExpensesTable();
     showToast('ទាញយកទិន្នន័យពី Google Sheets ជោគជ័យ!', 'success');
@@ -1535,6 +1543,402 @@ function getStatusBadgeClass(status) {
 }
 
 // ==========================================
+// INVITATIONS (ភ្ញៀវត្រៀមហៅ & RSVP) LOGIC
+// ==========================================
+
+function renderInvitationsTable() {
+  const tbody = document.getElementById('invitations-table-body');
+  if (!tbody) return;
+
+  const searchQuery = (document.getElementById('inv-search-input')?.value || '').toLowerCase();
+  const statusFilter = document.getElementById('inv-status-filter')?.value || 'all';
+  const viaFilter = document.getElementById('inv-via-filter')?.value || 'all';
+  const debtFilter = document.getElementById('inv-debt-filter')?.value || 'all';
+
+  // Calculate summary metrics
+  const totalCount = state.invitations.length;
+  const oweMeCount = state.invitations.filter(i => (i.debt_status || '') === 'ជំពាក់ដៃខ្ញុំ').length;
+  const seenCount = state.invitations.filter(i => (i.response_status || '') === 'ចូលមើល').length;
+  const seenNoReplyCount = state.invitations.filter(i => (i.response_status || '') === 'ចូលមើលហើយមិនតប').length;
+  const unseenCount = state.invitations.filter(i => (i.response_status || '') === 'មិនចូលមើល').length;
+
+  const totalEl = document.getElementById('inv-count-total');
+  const oweMeEl = document.getElementById('inv-count-owe-me');
+  const seenEl = document.getElementById('inv-count-seen');
+  const seenNoReplyEl = document.getElementById('inv-count-seen-no-reply');
+  const unseenEl = document.getElementById('inv-count-unseen');
+
+  if (totalEl) totalEl.textContent = totalCount;
+  if (oweMeEl) oweMeEl.textContent = oweMeCount;
+  if (seenEl) seenEl.textContent = seenCount;
+  if (seenNoReplyEl) seenNoReplyEl.textContent = seenNoReplyCount;
+  if (unseenEl) unseenEl.textContent = unseenCount;
+
+  // Filter list
+  const filtered = state.invitations.filter(i => {
+    const matchSearch = String(i.guest_name || '').toLowerCase().includes(searchQuery) ||
+                        String(i.address || '').toLowerCase().includes(searchQuery) ||
+                        String(i.note || '').toLowerCase().includes(searchQuery);
+    const matchStatus = statusFilter === 'all' || (i.response_status || '') === statusFilter;
+    const matchVia = viaFilter === 'all' || (i.invite_via || '') === viaFilter;
+    const matchDebt = debtFilter === 'all' || (i.debt_status || '') === debtFilter;
+
+    return matchSearch && matchStatus && matchVia && matchDebt;
+  });
+
+  const countEl = document.getElementById('inv-filter-count');
+  if (countEl) countEl.textContent = `បង្ហាញ ${filtered.length} នៃភ្ញៀវសរុប ${totalCount}`;
+
+  const mobileList = document.getElementById('invitations-mobile-list');
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-400">មិនទាន់មានទិន្នន័យភ្ញៀវត្រៀមហៅនៅឡើយទេ</td></tr>';
+    if (mobileList) mobileList.innerHTML = '<div class="p-6 text-center text-gray-400 text-sm">មិនទាន់មានទិន្នន័យភ្ញៀវត្រៀមហៅនៅឡើយទេ</div>';
+    return;
+  }
+
+  // 1. Desktop Rows
+  tbody.innerHTML = filtered.map((inv, idx) => `
+    <tr class="border-b hover:bg-pink-50/30 transition">
+      <td class="px-4 py-3 text-sm text-gray-400">${idx + 1}</td>
+      <td class="px-4 py-3 font-bold text-gray-900">${escapeHtml(inv.guest_name)}</td>
+      <td class="px-4 py-3 text-xs text-gray-600">${escapeHtml(inv.address || '—')}</td>
+      <td class="px-4 py-3 text-center whitespace-nowrap">
+        ${getInvDebtBadge(inv.debt_status)}
+      </td>
+      <td class="px-4 py-3 text-center whitespace-nowrap">
+        ${getInvViaBadge(inv.invite_via)}
+      </td>
+      <td class="px-4 py-3 text-center whitespace-nowrap">
+        ${getInvResponseDropdown(inv.id, inv.response_status)}
+      </td>
+      <td class="px-4 py-3 text-xs text-gray-500 max-w-xs truncate" title="${escapeHtml(inv.note || '')}">${escapeHtml(inv.note || '—')}</td>
+      <td class="px-4 py-3 text-right space-x-1 whitespace-nowrap">
+        <button onclick="convertInvitationToGift('${inv.id}')" class="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-md transition cursor-pointer" title="កត់ចំណងដៃ">
+          <i class="fa-solid fa-gift"></i> ចងដៃ
+        </button>
+        <button onclick="editInvitation('${inv.id}')" class="px-2.5 py-1 text-xs font-medium text-pink-700 bg-pink-100 hover:bg-pink-200 rounded-md transition cursor-pointer" title="កែប្រែ">
+          <i class="fa-solid fa-pen-to-square"></i> កែ
+        </button>
+        <button onclick="deleteInvitation('${inv.id}')" class="px-2.5 py-1 text-xs font-medium text-rose-700 bg-rose-100 hover:bg-rose-200 rounded-md transition cursor-pointer" title="លុប">
+          <i class="fa-solid fa-trash-can"></i> លុប
+        </button>
+      </td>
+    </tr>
+  `).join('');
+
+  // 2. Mobile Cards
+  if (mobileList) {
+    mobileList.innerHTML = filtered.map(inv => `
+      <div class="p-4 hover:bg-pink-50/20 transition border-b border-gray-100 last:border-b-0 space-y-2.5">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="font-bold text-gray-900 text-base leading-tight">${escapeHtml(inv.guest_name)}</div>
+            <div class="text-xs text-gray-500 mt-1 flex items-center gap-1.5 flex-wrap">
+              <span>📍 ${escapeHtml(inv.address || 'មិនកំណត់ទីតាំង')}</span>
+            </div>
+          </div>
+          <div>
+            ${getInvDebtBadge(inv.debt_status)}
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between gap-2 pt-1 border-t border-gray-50 text-xs">
+          <div>
+            ${getInvViaBadge(inv.invite_via)}
+          </div>
+          <div>
+            ${getInvResponseDropdown(inv.id, inv.response_status)}
+          </div>
+        </div>
+
+        ${inv.note ? `
+          <div class="text-xs text-gray-500 italic bg-gray-50 p-2 rounded-lg">
+            ចំណាំ: ${escapeHtml(inv.note)}
+          </div>
+        ` : ''}
+
+        <div class="flex items-center justify-end gap-2 pt-1">
+          <button onclick="convertInvitationToGift('${inv.id}')" class="px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-gift"></i> ចងដៃ
+          </button>
+          <button onclick="editInvitation('${inv.id}')" class="px-3 py-1.5 text-xs font-semibold text-pink-700 bg-pink-50 hover:bg-pink-100 rounded-lg transition flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-pen-to-square"></i> កែប្រែ
+          </button>
+          <button onclick="deleteInvitation('${inv.id}')" class="px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-trash-can"></i> លុប
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+function getInvDebtBadge(status) {
+  switch (status) {
+    case 'ជំពាក់ដៃខ្ញុំ':
+      return '<span class="px-2.5 py-1 text-xs font-bold rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200 inline-block">ជំពាក់ដៃខ្ញុំ</span>';
+    case 'ជំពាក់គេ':
+      return '<span class="px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-200 inline-block">ជំពាក់គេ</span>';
+    default:
+      return '<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700 inline-block">ភ្ញៀវទូទៅ</span>';
+  }
+}
+
+function getInvViaBadge(via) {
+  switch (via) {
+    case 'Facebook':
+      return '<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-blue-50 text-blue-700 border border-blue-200 inline-flex items-center gap-1"><i class="fa-brands fa-facebook"></i> Facebook</span>';
+    case 'Telegram':
+      return '<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-sky-50 text-sky-700 border border-sky-200 inline-flex items-center gap-1"><i class="fa-brands fa-telegram"></i> Telegram</span>';
+    case 'LINE':
+      return '<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-green-50 text-green-700 border border-green-200 inline-flex items-center gap-1"><i class="fa-brands fa-line"></i> LINE</span>';
+    case 'ទូរស័ព្ទ':
+      return '<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-purple-50 text-purple-700 border border-purple-200 inline-flex items-center gap-1"><i class="fa-solid fa-phone"></i> ទូរស័ព្ទ</span>';
+    case 'ផ្ទាល់':
+      return '<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1"><i class="fa-solid fa-envelope"></i> ផ្ទាល់</span>';
+    default:
+      return `<span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-gray-100 text-gray-700 border border-gray-200">${escapeHtml(via || 'ផ្សេងៗ')}</span>`;
+  }
+}
+
+function getInvResponseDropdown(id, currentStatus) {
+  const status = currentStatus || 'មិនទាន់ផ្ញើ';
+  let colorClass = 'bg-gray-50 border-gray-200 text-gray-700';
+
+  if (status === 'ចូលមើល') {
+    colorClass = 'bg-emerald-50 border-emerald-300 text-emerald-800 font-bold';
+  } else if (status === 'មិនចូលមើល') {
+    colorClass = 'bg-rose-50 border-rose-300 text-rose-800 font-bold';
+  } else if (status === 'ចូលមើលហើយមិនតប') {
+    colorClass = 'bg-amber-50 border-amber-300 text-amber-800 font-bold';
+  } else if (status === 'បានតប/មក') {
+    colorClass = 'bg-teal-50 border-teal-300 text-teal-800 font-bold';
+  } else if (status === 'បានតប/មិនមក') {
+    colorClass = 'bg-gray-100 border-gray-300 text-gray-600';
+  }
+
+  return `
+    <select onchange="updateInvitationStatus('${id}', this.value)" class="text-xs font-bold rounded-xl border px-2.5 py-1 transition focus:outline-none focus:ring-2 focus:ring-pink-500 cursor-pointer ${colorClass}">
+      <option value="មិនទាន់ផ្ញើ" ${status === 'មិនទាន់ផ្ញើ' ? 'selected' : ''}>⏳ មិនទាន់ផ្ញើ</option>
+      <option value="ចូលមើល" ${status === 'ចូលមើល' ? 'selected' : ''}>👁️ ចូលមើល</option>
+      <option value="មិនចូលមើល" ${status === 'មិនចូលមើល' ? 'selected' : ''}>🙈 មិនចូលមើល</option>
+      <option value="ចូលមើលហើយមិនតប" ${status === 'ចូលមើលហើយមិនតប' ? 'selected' : ''}>🤐 ចូលមើលហើយមិនតប</option>
+      <option value="បានតប/មក" ${status === 'បានតប/មក' ? 'selected' : ''}>🎉 បានតប/មក</option>
+      <option value="បានតប/មិនមក" ${status === 'បានតប/មិនមក' ? 'selected' : ''}>❌ បានតប/មិនមក</option>
+    </select>
+  `;
+}
+
+function openAddInvitationModal() {
+  const form = document.getElementById('invitation-form');
+  if (form) form.reset();
+  state.editingInvitationId = null;
+  const title = document.getElementById('inv-modal-title');
+  if (title) title.textContent = 'បន្ថែមភ្ញៀវត្រៀមហៅ';
+  const submitBtn = document.getElementById('inv-modal-submit-btn');
+  if (submitBtn) submitBtn.textContent = 'រក្សាទុក';
+  const editIdInput = document.getElementById('inv-edit-id');
+  if (editIdInput) editIdInput.value = '';
+
+  const modal = document.getElementById('invitation-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(() => {
+      document.getElementById('inv-guest-name')?.focus();
+    }, 50);
+  }
+}
+
+function closeInvitationModal() {
+  const modal = document.getElementById('invitation-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+function editInvitation(id) {
+  const inv = state.invitations.find(i => String(i.id) === String(id));
+  if (!inv) return;
+
+  state.editingInvitationId = id;
+  const editIdInput = document.getElementById('inv-edit-id');
+  if (editIdInput) editIdInput.value = id;
+
+  document.getElementById('inv-guest-name').value = inv.guest_name || '';
+  document.getElementById('inv-address').value = inv.address || '';
+  document.getElementById('inv-debt-status').value = inv.debt_status || 'ជំពាក់ដៃខ្ញុំ';
+  document.getElementById('inv-invite-via').value = inv.invite_via || 'Facebook';
+  document.getElementById('inv-response-status').value = inv.response_status || 'ចូលមើល';
+  document.getElementById('inv-note').value = inv.note || '';
+
+  const title = document.getElementById('inv-modal-title');
+  if (title) title.textContent = 'កែប្រែព័ត៌មានភ្ញៀវត្រៀមហៅ';
+  const submitBtn = document.getElementById('inv-modal-submit-btn');
+  if (submitBtn) submitBtn.textContent = 'កែប្រែទិន្នន័យ';
+
+  const modal = document.getElementById('invitation-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+}
+
+async function handleInvitationSubmit(e) {
+  e.preventDefault();
+
+  const guestName = document.getElementById('inv-guest-name').value.trim();
+  const address = document.getElementById('inv-address').value.trim();
+  const debtStatus = document.getElementById('inv-debt-status').value;
+  const inviteVia = document.getElementById('inv-invite-via').value;
+  const responseStatus = document.getElementById('inv-response-status').value;
+  const note = document.getElementById('inv-note').value.trim();
+
+  if (!guestName) {
+    showToast('សូមបញ្ចូលឈ្មោះភ្ញៀវ!', 'warning');
+    return;
+  }
+
+  const invData = {
+    guest_name: guestName,
+    address: address,
+    debt_status: debtStatus,
+    invite_via: inviteVia,
+    response_status: responseStatus,
+    note: note
+  };
+
+  if (state.editingInvitationId) {
+    invData.id = state.editingInvitationId;
+    if (state.apiUrl) {
+      const res = await callBackend('updateInvitation', 'POST', invData);
+      if (res && res.success) {
+        showToast(res.message || 'កែប្រែព័ត៌មានភ្ញៀវជោគជ័យ!', 'success');
+      }
+    }
+    const idx = state.invitations.findIndex(i => String(i.id) === String(state.editingInvitationId));
+    if (idx !== -1) {
+      state.invitations[idx] = { ...state.invitations[idx], ...invData };
+    }
+    state.editingInvitationId = null;
+  } else {
+    if (state.apiUrl) {
+      const res = await callBackend('addInvitation', 'POST', invData);
+      if (res && res.success) {
+        invData.id = res.id;
+        showToast(res.message || 'រក្សាទុកភ្ញៀវត្រៀមហៅជោគជ័យ!', 'success');
+      }
+    } else {
+      invData.id = 'INV_' + Date.now();
+      showToast('រក្សាទុកក្នុងទម្រង់ Offline ជោគជ័យ!', 'success');
+    }
+    invData.created_at = new Date().toLocaleString('km-KH');
+    state.invitations.unshift(invData);
+  }
+
+  localStorage.setItem('wedding_invitations', JSON.stringify(state.invitations));
+  closeInvitationModal();
+  renderInvitationsTable();
+}
+
+async function deleteInvitation(id) {
+  if (!confirm('តើបងពិតជាចង់លុបភ្ញៀវនេះចេញពីបញ្ជីត្រៀមហៅមែនទេ?')) return;
+
+  if (state.apiUrl) {
+    const res = await callBackend('deleteInvitation', 'POST', { id: id });
+    if (res && res.success) {
+      showToast('លុបភ្ញៀវជោគជ័យ!', 'success');
+    }
+  } else {
+    showToast('លុបក្នុងទម្រង់ Offline ជោគជ័យ!', 'info');
+  }
+
+  state.invitations = state.invitations.filter(i => String(i.id) !== String(id));
+  localStorage.setItem('wedding_invitations', JSON.stringify(state.invitations));
+  renderInvitationsTable();
+}
+
+async function updateInvitationStatus(id, newStatus) {
+  const inv = state.invitations.find(i => String(i.id) === String(id));
+  if (!inv) return;
+
+  inv.response_status = newStatus;
+  localStorage.setItem('wedding_invitations', JSON.stringify(state.invitations));
+
+  if (state.apiUrl) {
+    callBackend('updateInvitation', 'POST', { id: id, response_status: newStatus });
+  }
+
+  renderInvitationsTable();
+  showToast(`បានប្តូរស្ថានភាព "${inv.guest_name}" ទៅ "${newStatus}"`, 'success');
+}
+
+function convertInvitationToGift(id) {
+  const inv = state.invitations.find(i => String(i.id) === String(id));
+  if (!inv) return;
+
+  switchView('gift-entry-view');
+  document.getElementById('gift-guest-name').value = inv.guest_name || '';
+
+  const statusEl = document.getElementById('gift-status');
+  if (statusEl) {
+    statusEl.value = (inv.debt_status === 'ជំពាក់ដៃខ្ញុំ') ? 'ជំពាក់ដៃយើង' : 'សងដៃរួច';
+  }
+
+  const noteEl = document.getElementById('gift-note');
+  if (noteEl) {
+    noteEl.value = (inv.address ? `អាស័យដ្ឋាន: ${inv.address} | ` : '') + (inv.note ? inv.note : '');
+  }
+
+  const amountInput = document.getElementById('gift-amount');
+  if (amountInput) {
+    amountInput.focus();
+  }
+
+  showToast(`បានផ្ទេរព័ត៌មាន "${inv.guest_name}" មកកាន់ទម្រង់កត់ចំណងដៃ!`, 'info');
+}
+
+function exportInvitationsToCSV() {
+  if (state.invitations.length === 0) {
+    showToast('មិនមានទិន្នន័យភ្ញៀវសម្រាប់ Export ទេ!', 'warning');
+    return;
+  }
+
+  let csv = '\uFEFF'; // UTF-8 BOM
+  csv += 'ល.រ,ឈ្មោះភ្ញៀវ,អាស័យដ្ឋាន,ស្ថានភាពជំពាក់ដៃ,ហៅតាមរយៈ,ស្ថានភាពឆ្លើយតប,កំណត់សម្គាល់,កាលបរិច្ឆេទ\r\n';
+
+  state.invitations.forEach((inv, idx) => {
+    const row = [
+      idx + 1,
+      `"${(inv.guest_name || '').replace(/"/g, '""')}"`,
+      `"${(inv.address || '').replace(/"/g, '""')}"`,
+      `"${(inv.debt_status || 'ជំពាក់ដៃខ្ញុំ').replace(/"/g, '""')}"`,
+      `"${(inv.invite_via || 'Facebook').replace(/"/g, '""')}"`,
+      `"${(inv.response_status || 'មិនទាន់ផ្ញើ').replace(/"/g, '""')}"`,
+      `"${(inv.note || '').replace(/"/g, '""')}"`,
+      `"${(inv.created_at || '').replace(/"/g, '""')}"`
+    ];
+    csv += row.join(',') + '\r\n';
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  link.setAttribute('href', url);
+  link.setAttribute('download', `បញ្ជីភ្ញៀវត្រៀមហៅ_PEUNG_VIREAK_${dateStr}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  showToast('បានទាញយកបញ្ជីភ្ញៀវត្រៀមហៅជា Excel ជោគជ័យ!', 'success');
+}
+
+// ==========================================
 // VIEW NAVIGATION
 // ==========================================
 
@@ -1542,6 +1946,7 @@ function switchView(viewId) {
   state.currentView = viewId;
   const views = [
     'dashboard-view',
+    'invitations-view',
     'gift-entry-view',
     'gifts-table-view',
     'expense-entry-view',
@@ -1581,6 +1986,7 @@ function switchView(viewId) {
 
   // Re-render when switching views
   if (viewId === 'dashboard-view') renderDashboard();
+  if (viewId === 'invitations-view') renderInvitationsTable();
   if (viewId === 'gifts-table-view') renderGiftsTable();
   if (viewId === 'expenses-table-view') renderExpensesTable();
 }
@@ -2055,6 +2461,19 @@ function initEventListeners() {
   const expStatusFilter = document.getElementById('expense-status-filter');
   if (expStatusFilter) expStatusFilter.addEventListener('change', renderExpensesTable);
 
+  // Invitation Form & Search / Filters
+  const invForm = document.getElementById('invitation-form');
+  if (invForm) invForm.addEventListener('submit', handleInvitationSubmit);
+
+  const invSearch = document.getElementById('inv-search-input');
+  if (invSearch) invSearch.addEventListener('input', renderInvitationsTable);
+  const invStatusFilter = document.getElementById('inv-status-filter');
+  if (invStatusFilter) invStatusFilter.addEventListener('change', renderInvitationsTable);
+  const invViaFilter = document.getElementById('inv-via-filter');
+  if (invViaFilter) invViaFilter.addEventListener('change', renderInvitationsTable);
+  const invDebtFilter = document.getElementById('inv-debt-filter');
+  if (invDebtFilter) invDebtFilter.addEventListener('change', renderInvitationsTable);
+
   // Modal Form for Adding Location
   const locForm = document.getElementById('location-form');
   if (locForm) locForm.addEventListener('submit', handleSaveNewLocation);
@@ -2072,7 +2491,7 @@ function initEventListeners() {
   if (changePassForm) changePassForm.addEventListener('submit', handleChangePasswordSubmit);
 
   // Close modals when clicking backdrop
-  ['location-modal', 'category-modal', 'settings-modal', 'logout-confirm-modal', 'change-password-modal', 'export-book-modal'].forEach(modalId => {
+  ['location-modal', 'category-modal', 'settings-modal', 'logout-confirm-modal', 'change-password-modal', 'export-book-modal', 'invitation-modal'].forEach(modalId => {
     const modalEl = document.getElementById(modalId);
     if (modalEl) {
       modalEl.addEventListener('click', (e) => {
@@ -2087,7 +2506,7 @@ function initEventListeners() {
   // Close modals on Escape key
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      ['location-modal', 'category-modal', 'settings-modal', 'logout-confirm-modal', 'change-password-modal', 'export-book-modal'].forEach(modalId => {
+      ['location-modal', 'category-modal', 'settings-modal', 'logout-confirm-modal', 'change-password-modal', 'export-book-modal', 'invitation-modal'].forEach(modalId => {
         const modalEl = document.getElementById(modalId);
         if (modalEl && !modalEl.classList.contains('hidden')) {
           modalEl.classList.add('hidden');
