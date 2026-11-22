@@ -2,9 +2,19 @@
  * Wedding Gift & Expense Management - Frontend Logic (js/app.js)
  */
 
+// Active Google Apps Script Web App API URL
+const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxMOBYHLId-pwQnV45Ch-RUEJ1OH_zMp2BW2qDb8fdsDy13bTwqXcPs6uiJQlP8rmzO/exec';
+
+// Auto-migrate if user has the legacy API URL stored
+let activeApiUrl = localStorage.getItem('wedding_app_api_url');
+if (!activeApiUrl || activeApiUrl.includes('AKfycbwP4DvJEyBDOX3qMZsd-p-LSHDml65wwFMm5CS3yq4s6EwvdNjhaRp-t2mF7DgwNxmT')) {
+  activeApiUrl = DEFAULT_API_URL;
+  localStorage.setItem('wedding_app_api_url', DEFAULT_API_URL);
+}
+
 // Global Application State
 const state = {
-  apiUrl: localStorage.getItem('wedding_app_api_url') || 'https://script.google.com/macros/s/AKfycbwP4DvJEyBDOX3qMZsd-p-LSHDml65wwFMm5CS3yq4s6EwvdNjhaRp-t2mF7DgwNxmT/exec',
+  apiUrl: activeApiUrl,
   user: JSON.parse(localStorage.getItem('wedding_user_session') || 'null'),
   gifts: [],
   expenses: [],
