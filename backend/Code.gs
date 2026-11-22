@@ -164,7 +164,7 @@ function doGet(e) {
         result = { 
           success: true, 
           message: "Wedding App Backend API is active.", 
-          endpoints: ["getGifts", "getExpenses", "getLocations", "getSummary"] 
+          endpoints: ["getGifts", "getExpenses", "getLocations", "getInvitations", "getSummary"] 
         };
         break;
     }
@@ -552,8 +552,8 @@ function handleAddInvitation(data) {
     sheet.appendRow(['id', 'guest_name', 'address', 'debt_status', 'invite_via', 'response_status', 'note', 'created_at']);
   }
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const newId = 'INV_' + Utilities.getUuid().substring(0, 8);
-  const createdAt = Utilities.formatDate(new Date(), "Asia/Phnom_Penh", "yyyy-MM-dd HH:mm:ss");
+  const newId = data.id || ('INV_' + Utilities.getUuid().substring(0, 8));
+  const createdAt = data.created_at || Utilities.formatDate(new Date(), "Asia/Phnom_Penh", "yyyy-MM-dd HH:mm:ss");
 
   const rowMap = {
     id: newId,

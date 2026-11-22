@@ -131,14 +131,16 @@ function loadSavedCategories() {
 // API & NETWORK HELPERS
 // ==========================================
 
-async function callBackend(action, method = 'GET', data = {}) {
+async function callBackend(action, method = 'GET', data = {}, silent = false) {
   if (!state.apiUrl) {
-    showToast('សូមកំណត់ Web App API URL នៅក្នុងការកំណត់ (Settings) ជាមុនសិន!', 'warning');
-    openSettingsModal();
+    if (!silent) {
+      showToast('សូមកំណត់ Web App API URL នៅក្នុងការកំណត់ (Settings) ជាមុនសិន!', 'warning');
+      openSettingsModal();
+    }
     return null;
   }
 
-  showLoader(true);
+  if (!silent) showLoader(true);
 
   try {
     let url = state.apiUrl;
@@ -163,10 +165,12 @@ async function callBackend(action, method = 'GET', data = {}) {
     return result;
   } catch (err) {
     console.error('API Error:', err);
-    showToast('កំហុសក្នុងការតភ្ជាប់ API: ' + (err.message || 'សូមពិនិត្យមើល URL និងសិទ្ធិ Access'), 'error');
+    if (!silent) {
+      showToast('កំហុសក្នុងការតភ្ជាប់ API: ' + (err.message || 'សូមពិនិត្យមើល URL និងសិទ្ធិ Access'), 'error');
+    }
     return null;
   } finally {
-    showLoader(false);
+    if (!silent) showLoader(false);
   }
 }
 
@@ -379,7 +383,22 @@ async function fetchAllData() {
       state.gifts = giftsRes.data || [];
     }
     if (invRes && invRes.success && Array.isArray(invRes.data)) {
-      state.invitations = invRes.data || [];
+      const serverInvs = invRes.data || [];
+      const localInvs = JSON.parse(localStorage.getItem('wedding_invitations') || '[]');
+
+      const serverIdSet = new Set(serverInvs.map(i => String(i.id)));
+      const unsyncedLocals = localInvs.filter(i => i && i.id && !serverIdSet.has(String(i.id)));
+
+      // Auto-upload unsynced local invitations to Google Sheets
+      if (unsyncedLocals.length > 0) {
+        unsyncedLocals.forEach(async (inv) => {
+          try {
+            await callBackend('addInvitation', 'POST', inv, true);
+          } catch (e) {}
+        });
+      }
+
+      state.invitations = [...serverInvs, ...unsyncedLocals];
       localStorage.setItem('wedding_invitations', JSON.stringify(state.invitations));
     }
     if (expRes && expRes.success) {
@@ -2107,7 +2126,7 @@ async function updateInvitationStatus(id, newStatus) {
   localStorage.setItem('wedding_invitations', JSON.stringify(state.invitations));
 
   if (state.apiUrl) {
-    callBackend('updateInvitation', 'POST', { id: id, response_status: newStatus });
+    callBackend('updateInvitation', 'POST', { id: id, response_status: newStatus }, true);
   }
 
   renderInvitationsTable();
