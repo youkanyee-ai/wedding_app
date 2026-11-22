@@ -377,6 +377,15 @@ async function fetchAllData() {
     }
     if (expRes && expRes.success) {
       state.expenses = expRes.data || [];
+      // Synchronize all categories from existing expenses
+      state.expenses.forEach(e => {
+        if (e.expense_name && typeof e.expense_name === 'string') {
+          const trimmed = e.expense_name.trim();
+          if (trimmed && !state.expenseCategories.includes(trimmed)) {
+            state.expenseCategories.push(trimmed);
+          }
+        }
+      });
     }
     if (locRes && locRes.success && Array.isArray(locRes.data) && locRes.data.length > 0) {
       // Merge with seed locations to avoid duplicates
@@ -642,14 +651,29 @@ function populateExpenseCategories(selectedCategory = '') {
   const select = document.getElementById('expense-name');
   if (!select) return;
 
+  const trimmedSelected = (selectedCategory || '').trim();
   select.innerHTML = '<option value="">-- ជ្រើសរើសឈ្មោះចំណាយ --</option>';
+
   state.expenseCategories.forEach(cat => {
+    const trimmedCat = (cat || '').trim();
+    if (!trimmedCat) return;
     const opt = document.createElement('option');
-    opt.value = cat;
-    opt.textContent = cat;
-    if (cat === selectedCategory) opt.selected = true;
+    opt.value = trimmedCat;
+    opt.textContent = trimmedCat;
+    if (trimmedSelected && trimmedCat.toLowerCase() === trimmedSelected.toLowerCase()) {
+      opt.selected = true;
+    }
     select.appendChild(opt);
   });
+
+  // If selectedCategory is provided but was not in state.expenseCategories, add it dynamically
+  if (trimmedSelected && !Array.from(select.options).some(o => o.value.toLowerCase() === trimmedSelected.toLowerCase())) {
+    const customOpt = document.createElement('option');
+    customOpt.value = trimmedSelected;
+    customOpt.textContent = trimmedSelected;
+    customOpt.selected = true;
+    select.appendChild(customOpt);
+  }
 }
 
 function openAddCategoryModal() {
@@ -710,6 +734,21 @@ function updateExpenseBalanceCalculation() {
   if (balanceInput) {
     balanceInput.value = balance >= 0 ? balance : 0;
   }
+}
+
+function setExpensePaidInFull() {
+  const totalInput = document.getElementById('expense-total');
+  const depositInput = document.getElementById('expense-deposit');
+  if (!totalInput || !depositInput) return;
+  const total = parseFloat(totalInput.value) || 0;
+  if (total <= 0) {
+    showToast('សូមបញ្ចូលថ្លៃសរុប (Total Amount) ជាមុនសិន!', 'warning');
+    totalInput.focus();
+    return;
+  }
+  depositInput.value = total;
+  updateExpenseBalanceCalculation();
+  showToast('បានកំណត់បង់គ្រប់រួចរាល់! ប្រាក់នៅសល់ = 0', 'success');
 }
 
 // ==========================================
@@ -779,8 +818,12 @@ async function handleGiftSubmit(e) {
       state.gifts[index] = { ...state.gifts[index], ...giftData };
     }
     state.editingGiftId = null;
-    document.getElementById('gift-form-submit-btn').textContent = 'រក្សាទុកចំណងដៃ';
-    document.getElementById('gift-cancel-edit-btn').classList.add('hidden');
+    const submitBtn = document.getElementById('gift-form-submit-btn');
+    if (submitBtn) submitBtn.textContent = 'រក្សាទុកចំណងដៃ';
+    const heading = document.getElementById('gift-form-heading');
+    if (heading) heading.textContent = 'កត់ត្រាចំណងដៃ (Gift Entry Form)';
+    const cancelBtn = document.getElementById('gift-cancel-edit-btn');
+    if (cancelBtn) cancelBtn.innerHTML = '<i class="fa-solid fa-arrow-left"></i> <span>ត្រឡប់ក្រោយ (Back)</span>';
   } else {
     // ADD NEW OPERATION
     if (state.apiUrl) {
@@ -804,10 +847,15 @@ async function handleGiftSubmit(e) {
 }
 
 function resetGiftForm() {
-  document.getElementById('gift-form').reset();
+  const form = document.getElementById('gift-form');
+  if (form) form.reset();
   state.editingGiftId = null;
-  document.getElementById('gift-form-submit-btn').textContent = 'រក្សាទុកចំណងដៃ';
-  document.getElementById('gift-cancel-edit-btn').classList.add('hidden');
+  const submitBtn = document.getElementById('gift-form-submit-btn');
+  if (submitBtn) submitBtn.textContent = 'រក្សាទុកចំណងដៃ';
+  const heading = document.getElementById('gift-form-heading');
+  if (heading) heading.textContent = 'កត់ត្រាចំណងដៃ (Gift Entry Form)';
+  const cancelBtn = document.getElementById('gift-cancel-edit-btn');
+  if (cancelBtn) cancelBtn.innerHTML = '<i class="fa-solid fa-arrow-left"></i> <span>ត្រឡប់ក្រោយ (Back)</span>';
   const sideEl = document.getElementById('gift-side');
   if (sideEl) sideEl.value = 'ខាងប្រុស';
   const relEl = document.getElementById('gift-relation');
@@ -815,6 +863,11 @@ function resetGiftForm() {
   const invEl = document.getElementById('gift-invite-method');
   if (invEl) invEl.value = 'ផ្ទាល់';
   populateProvinces();
+}
+
+function cancelGiftEditAndBack() {
+  resetGiftForm();
+  switchView('gifts-table-view');
 }
 
 function editGift(id) {
@@ -855,8 +908,15 @@ function editGift(id) {
     }
   }
 
-  document.getElementById('gift-form-submit-btn').textContent = 'កែប្រែចំណងដៃ (Update)';
-  document.getElementById('gift-cancel-edit-btn').classList.remove('hidden');
+  const submitBtn = document.getElementById('gift-form-submit-btn');
+  if (submitBtn) submitBtn.textContent = 'កែប្រែចំណងដៃ (Update)';
+  const heading = document.getElementById('gift-form-heading');
+  if (heading) heading.textContent = 'កែប្រែចំណងដៃ (Edit Gift)';
+  const cancelBtn = document.getElementById('gift-cancel-edit-btn');
+  if (cancelBtn) {
+    cancelBtn.innerHTML = '<i class="fa-solid fa-xmark"></i> <span>បោះបង់ការកែប្រែ (Cancel)</span>';
+    cancelBtn.classList.remove('hidden');
+  }
 }
 
 async function deleteGift(id) {
@@ -921,8 +981,12 @@ async function handleExpenseSubmit(e) {
       state.expenses[idx] = { ...state.expenses[idx], ...expenseData };
     }
     state.editingExpenseId = null;
-    document.getElementById('expense-form-submit-btn').textContent = 'រក្សាទុកការចំណាយ';
-    document.getElementById('expense-cancel-edit-btn').classList.add('hidden');
+    const submitBtn = document.getElementById('expense-form-submit-btn');
+    if (submitBtn) submitBtn.textContent = 'រក្សាទុកការចំណាយ';
+    const heading = document.getElementById('expense-form-heading');
+    if (heading) heading.textContent = 'កត់ត្រាការចំណាយ (Expense Entry Form)';
+    const cancelBtn = document.getElementById('expense-cancel-edit-btn');
+    if (cancelBtn) cancelBtn.innerHTML = '<i class="fa-solid fa-arrow-left"></i> <span>ត្រឡប់ក្រោយ (Back)</span>';
   } else {
     if (state.apiUrl) {
       const res = await callBackend('addExpense', 'POST', expenseData);
@@ -945,12 +1009,24 @@ async function handleExpenseSubmit(e) {
 }
 
 function resetExpenseForm() {
-  document.getElementById('expense-form').reset();
+  const form = document.getElementById('expense-form');
+  if (form) form.reset();
   state.editingExpenseId = null;
-  document.getElementById('expense-form-submit-btn').textContent = 'រក្សាទុកការចំណាយ';
-  document.getElementById('expense-cancel-edit-btn').classList.add('hidden');
-  document.getElementById('expense-date').valueAsDate = new Date();
+  const submitBtn = document.getElementById('expense-form-submit-btn');
+  if (submitBtn) submitBtn.textContent = 'រក្សាទុកការចំណាយ';
+  const heading = document.getElementById('expense-form-heading');
+  if (heading) heading.textContent = 'កត់ត្រាការចំណាយ (Expense Entry Form)';
+  const cancelBtn = document.getElementById('expense-cancel-edit-btn');
+  if (cancelBtn) cancelBtn.innerHTML = '<i class="fa-solid fa-arrow-left"></i> <span>ត្រឡប់ក្រោយ (Back)</span>';
+  const dateInput = document.getElementById('expense-date');
+  if (dateInput) dateInput.valueAsDate = new Date();
+  populateExpenseCategories();
   updateExpenseBalanceCalculation();
+}
+
+function cancelExpenseEditAndBack() {
+  resetExpenseForm();
+  switchView('expenses-table-view');
 }
 
 function editExpense(id) {
@@ -960,17 +1036,44 @@ function editExpense(id) {
   state.editingExpenseId = id;
   switchView('expense-entry-view');
 
-  document.getElementById('expense-name').value = expense.expense_name || '';
-  document.getElementById('expense-total').value = expense.total_amount || 0;
-  document.getElementById('expense-deposit').value = expense.deposit || 0;
-  document.getElementById('expense-balance').value = expense.balance || 0;
+  const expName = expense.expense_name ? String(expense.expense_name).trim() : '';
+  if (expName && !state.expenseCategories.includes(expName)) {
+    state.expenseCategories.push(expName);
+  }
+  populateExpenseCategories(expName);
+
+  const nameSelect = document.getElementById('expense-name');
+  if (nameSelect) {
+    nameSelect.value = expName;
+    if (expName && nameSelect.value !== expName) {
+      const opt = document.createElement('option');
+      opt.value = expName;
+      opt.textContent = expName;
+      opt.selected = true;
+      nameSelect.appendChild(opt);
+      nameSelect.value = expName;
+    }
+  }
+
+  document.getElementById('expense-total').value = expense.total_amount != null ? expense.total_amount : 0;
+  document.getElementById('expense-deposit').value = expense.deposit != null ? expense.deposit : 0;
+  document.getElementById('expense-balance').value = expense.balance != null ? expense.balance : 0;
   document.getElementById('expense-currency').value = expense.currency || 'USD';
   document.getElementById('expense-date').value = expense.date ? expense.date.substring(0, 10) : '';
   document.getElementById('expense-payment-method').value = expense.payment_method || 'សាច់ប្រាក់';
   document.getElementById('expense-note').value = expense.note || '';
 
-  document.getElementById('expense-form-submit-btn').textContent = 'កែប្រែការចំណាយ (Update)';
-  document.getElementById('expense-cancel-edit-btn').classList.remove('hidden');
+  const submitBtn = document.getElementById('expense-form-submit-btn');
+  if (submitBtn) submitBtn.textContent = 'កែប្រែការចំណាយ (Update)';
+
+  const heading = document.getElementById('expense-form-heading');
+  if (heading) heading.textContent = 'កែប្រែការចំណាយ (Edit Expense)';
+
+  const cancelBtn = document.getElementById('expense-cancel-edit-btn');
+  if (cancelBtn) {
+    cancelBtn.innerHTML = '<i class="fa-solid fa-xmark"></i> <span>បោះបង់ការកែប្រែ (Cancel)</span>';
+    cancelBtn.classList.remove('hidden');
+  }
 }
 
 async function deleteExpense(id) {
@@ -1834,7 +1937,7 @@ function initEventListeners() {
   if (comSelect) comSelect.addEventListener('change', onCommuneChange);
 
   const cancelGiftBtn = document.getElementById('gift-cancel-edit-btn');
-  if (cancelGiftBtn) cancelGiftBtn.addEventListener('click', resetGiftForm);
+  if (cancelGiftBtn) cancelGiftBtn.addEventListener('click', cancelGiftEditAndBack);
 
   // Expense Form & Calculation Events
   const expenseForm = document.getElementById('expense-form');
@@ -1852,7 +1955,7 @@ function initEventListeners() {
   }
 
   const cancelExpBtn = document.getElementById('expense-cancel-edit-btn');
-  if (cancelExpBtn) cancelExpBtn.addEventListener('click', resetExpenseForm);
+  if (cancelExpBtn) cancelExpBtn.addEventListener('click', cancelExpenseEditAndBack);
 
   // Default Today Date for Expense
   const expDate = document.getElementById('expense-date');
