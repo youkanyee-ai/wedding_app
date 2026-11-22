@@ -1101,6 +1101,7 @@ function renderDashboard() {
   let giftUSD = 0, giftKHR = 0;
   let expUSD = 0, expKHR = 0;
   let depositUSD = 0, depositKHR = 0;
+  let dueUSD = 0, dueKHR = 0;
 
   state.gifts.forEach(g => {
     const val = parseFloat(g.amount) || 0;
@@ -1114,42 +1115,63 @@ function renderDashboard() {
   state.expenses.forEach(e => {
     const total = parseFloat(e.total_amount) || 0;
     const dep = parseFloat(e.deposit) || 0;
+    const bal = parseFloat(e.balance != null ? e.balance : (total - dep)) || 0;
 
     if (String(e.currency).toUpperCase() === 'USD' || String(e.currency) === '$') {
       expUSD += total;
       depositUSD += dep;
+      dueUSD += bal;
     } else {
       expKHR += total;
       depositKHR += dep;
+      dueKHR += bal;
     }
   });
 
   const netUSD = giftUSD - expUSD;
   const netKHR = giftKHR - expKHR;
 
-  // Format Display
-  document.getElementById('dash-gift-usd').textContent = '$' + giftUSD.toLocaleString();
-  document.getElementById('dash-gift-khr').textContent = giftKHR.toLocaleString() + ' ៛';
-  document.getElementById('dash-gift-count').textContent = state.gifts.length;
+  // Format Display: Gifts Total
+  const giftUsdEl = document.getElementById('dash-gift-usd');
+  const giftKhrEl = document.getElementById('dash-gift-khr');
+  const giftCountEl = document.getElementById('dash-gift-count');
+  if (giftUsdEl) giftUsdEl.textContent = '$' + giftUSD.toLocaleString();
+  if (giftKhrEl) giftKhrEl.textContent = giftKHR.toLocaleString() + ' ៛';
+  if (giftCountEl) giftCountEl.textContent = state.gifts.length;
 
-  // Total Deposit Paid Display
+  // Expenses Total
+  const expUsdEl = document.getElementById('dash-exp-usd');
+  const expKhrEl = document.getElementById('dash-exp-khr');
+  const expCountEl = document.getElementById('dash-exp-count');
+  if (expUsdEl) expUsdEl.textContent = '$' + expUSD.toLocaleString();
+  if (expKhrEl) expKhrEl.textContent = expKHR.toLocaleString() + ' ៛';
+  if (expCountEl) expCountEl.textContent = state.expenses.length;
+
+  // Total Paid (បានទូទាត់រួច - កក់ & បង់គ្រប់)
   const depUsdEl = document.getElementById('dash-deposit-usd');
   const depKhrEl = document.getElementById('dash-deposit-khr');
   if (depUsdEl) depUsdEl.textContent = '$' + depositUSD.toLocaleString();
   if (depKhrEl) depKhrEl.textContent = depositKHR.toLocaleString() + ' ៛';
 
-  document.getElementById('dash-exp-usd').textContent = '$' + expUSD.toLocaleString();
-  document.getElementById('dash-exp-khr').textContent = expKHR.toLocaleString() + ' ៛';
-  document.getElementById('dash-exp-count').textContent = state.expenses.length;
+  // Remaining Due to Vendors (នៅសល់ត្រូវសងគេ / នៅខ្វះ)
+  const dueUsdEl = document.getElementById('dash-due-usd');
+  const dueKhrEl = document.getElementById('dash-due-khr');
+  if (dueUsdEl) dueUsdEl.textContent = '$' + dueUSD.toLocaleString();
+  if (dueKhrEl) dueKhrEl.textContent = dueKHR.toLocaleString() + ' ៛';
 
+  // Net Profit/Loss (តុល្យភាពសុទ្ធ: ចំណូលដកចំណាយ)
   const netUsdEl = document.getElementById('dash-net-usd');
   const netKhrEl = document.getElementById('dash-net-khr');
 
-  netUsdEl.textContent = (netUSD >= 0 ? '+$' : '-$') + Math.abs(netUSD).toLocaleString();
-  netUsdEl.className = netUSD >= 0 ? 'text-2xl font-bold text-emerald-600' : 'text-2xl font-bold text-rose-600';
+  if (netUsdEl) {
+    netUsdEl.textContent = (netUSD >= 0 ? '+$' : '-$') + Math.abs(netUSD).toLocaleString();
+    netUsdEl.className = netUSD >= 0 ? 'text-lg sm:text-2xl font-extrabold text-emerald-600' : 'text-lg sm:text-2xl font-extrabold text-rose-600';
+  }
 
-  netKhrEl.textContent = (netKHR >= 0 ? '+' : '-') + Math.abs(netKHR).toLocaleString() + ' ៛';
-  netKhrEl.className = netKHR >= 0 ? 'text-sm font-semibold text-emerald-600' : 'text-sm font-semibold text-rose-600';
+  if (netKhrEl) {
+    netKhrEl.textContent = (netKHR >= 0 ? '+' : '-') + Math.abs(netKHR).toLocaleString() + ' ៛';
+    netKhrEl.className = netKHR >= 0 ? 'text-xs sm:text-sm font-semibold text-emerald-600' : 'text-xs sm:text-sm font-semibold text-rose-600';
+  }
 
   // Recent Gifts Preview (Desktop Table)
   const recentGiftsList = document.getElementById('dash-recent-gifts');
@@ -1349,12 +1371,27 @@ function renderExpensesTable() {
 
   const searchQuery = (document.getElementById('expense-search-input')?.value || '').toLowerCase();
   const paymentFilter = document.getElementById('expense-payment-filter')?.value || 'all';
+  const statusFilter = document.getElementById('expense-status-filter')?.value || 'all';
 
   const filtered = state.expenses.filter(e => {
     const matchName = String(e.expense_name || '').toLowerCase().includes(searchQuery) ||
                       String(e.note || '').toLowerCase().includes(searchQuery);
     const matchPayment = paymentFilter === 'all' || e.payment_method === paymentFilter;
-    return matchName && matchPayment;
+
+    const total = parseFloat(e.total_amount) || 0;
+    const deposit = parseFloat(e.deposit) || 0;
+    const balance = parseFloat(e.balance != null ? e.balance : (total - deposit)) || 0;
+
+    let matchStatus = true;
+    if (statusFilter === 'paid') {
+      matchStatus = balance <= 0 && total > 0;
+    } else if (statusFilter === 'partial') {
+      matchStatus = deposit > 0 && balance > 0;
+    } else if (statusFilter === 'unpaid') {
+      matchStatus = deposit <= 0 && total > 0;
+    }
+
+    return matchName && matchPayment && matchStatus;
   });
 
   document.getElementById('expense-filter-count').textContent = `បង្ហាញ ${filtered.length} នៃចំណាយសរុប ${state.expenses.length}`;
@@ -1362,47 +1399,86 @@ function renderExpensesTable() {
   const expMobileList = document.getElementById('expenses-mobile-list');
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-400">មិនមានទិន្នន័យចំណាយត្រូវនឹងការស្វែងរកទេ</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-400">មិនមានទិន្នន័យចំណាយត្រូវនឹងការស្វែងរកទេ</td></tr>';
     if (expMobileList) expMobileList.innerHTML = '<div class="p-6 text-center text-gray-400 text-sm">មិនមានទិន្នន័យចំណាយត្រូវនឹងការស្វែងរកទេ</div>';
     return;
   }
 
   // 1. Desktop Table Rows
-  tbody.innerHTML = filtered.map((e, idx) => `
+  tbody.innerHTML = filtered.map((e, idx) => {
+    const total = parseFloat(e.total_amount) || 0;
+    const deposit = parseFloat(e.deposit) || 0;
+    const balance = parseFloat(e.balance != null ? e.balance : (total - deposit)) || 0;
+    const currSym = e.currency === 'USD' ? '$' : '';
+    const currPost = e.currency === 'USD' ? '' : ' ៛';
+
+    let statusHtml = '';
+    if (balance <= 0 && total > 0) {
+      statusHtml = '<span class="px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1"><i class="fa-solid fa-check text-[10px]"></i> បង់គ្រប់</span>';
+    } else if (deposit > 0 && balance > 0) {
+      statusHtml = '<span class="px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center gap-1"><i class="fa-solid fa-clock text-[10px]"></i> កក់ខ្លះ</span>';
+    } else {
+      statusHtml = '<span class="px-2.5 py-1 text-xs font-bold rounded-full bg-rose-100 text-rose-800 border border-rose-200 inline-flex items-center gap-1"><i class="fa-solid fa-circle-exclamation text-[10px]"></i> មិនទាន់បង់</span>';
+    }
+
+    return `
     <tr class="border-b hover:bg-amber-50/40 transition">
       <td class="px-4 py-3 text-sm text-gray-400">${idx + 1}</td>
       <td class="px-4 py-3 font-semibold text-gray-800">${escapeHtml(e.expense_name)}</td>
       <td class="px-4 py-3 font-bold text-gray-900">
-        ${e.currency === 'USD' ? '$' : ''}${Number(e.total_amount).toLocaleString()}${e.currency === 'USD' ? '' : ' ៛'}
+        ${currSym}${Number(total).toLocaleString()}${currPost}
       </td>
-      <td class="px-4 py-3 text-emerald-700 font-medium">
-        ${e.currency === 'USD' ? '$' : ''}${Number(e.deposit).toLocaleString()}${e.currency === 'USD' ? '' : ' ៛'}
+      <td class="px-4 py-3 text-blue-700 font-semibold">
+        ${currSym}${Number(deposit).toLocaleString()}${currPost}
       </td>
-      <td class="px-4 py-3 font-bold ${Number(e.balance) > 0 ? 'text-rose-600' : 'text-gray-500'}">
-        ${e.currency === 'USD' ? '$' : ''}${Number(e.balance).toLocaleString()}${e.currency === 'USD' ? '' : ' ៛'}
+      <td class="px-4 py-3 font-bold ${balance > 0 ? 'text-rose-600' : 'text-emerald-600'}">
+        ${currSym}${Number(balance).toLocaleString()}${currPost}
+      </td>
+      <td class="px-4 py-3 text-center whitespace-nowrap">
+        ${statusHtml}
       </td>
       <td class="px-4 py-3 text-xs">
         <span class="px-2 py-0.5 rounded bg-gray-100 text-gray-700">${escapeHtml(e.payment_method || 'សាច់ប្រាក់')}</span>
       </td>
       <td class="px-4 py-3 text-xs text-gray-500">${e.date ? e.date.substring(0, 10) : '—'}</td>
       <td class="px-4 py-3 text-right space-x-1 whitespace-nowrap">
-        <button onclick="editExpense('${e.id}')" class="px-2.5 py-1 text-xs font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 rounded-md transition" title="កែប្រែ">
+        <button onclick="editExpense('${e.id}')" class="px-2.5 py-1 text-xs font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 rounded-md transition cursor-pointer" title="កែប្រែ">
           <i class="fa-solid fa-pen-to-square"></i> កែ
         </button>
-        <button onclick="deleteExpense('${e.id}')" class="px-2.5 py-1 text-xs font-medium text-rose-700 bg-rose-100 hover:bg-rose-200 rounded-md transition" title="លុប">
+        <button onclick="deleteExpense('${e.id}')" class="px-2.5 py-1 text-xs font-medium text-rose-700 bg-rose-100 hover:bg-rose-200 rounded-md transition cursor-pointer" title="លុប">
           <i class="fa-solid fa-trash-can"></i> លុប
         </button>
       </td>
     </tr>
-  `).join('');
+    `;
+  }).join('');
 
   // 2. Mobile Responsive Cards
   if (expMobileList) {
-    expMobileList.innerHTML = filtered.map(e => `
+    expMobileList.innerHTML = filtered.map(e => {
+      const total = parseFloat(e.total_amount) || 0;
+      const deposit = parseFloat(e.deposit) || 0;
+      const balance = parseFloat(e.balance != null ? e.balance : (total - deposit)) || 0;
+      const currSym = e.currency === 'USD' ? '$' : '';
+      const currPost = e.currency === 'USD' ? '' : ' ៛';
+
+      let statusBadge = '';
+      if (balance <= 0 && total > 0) {
+        statusBadge = '<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1"><i class="fa-solid fa-check text-[9px]"></i> បង់គ្រប់</span>';
+      } else if (deposit > 0 && balance > 0) {
+        statusBadge = '<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center gap-1"><i class="fa-solid fa-clock text-[9px]"></i> កក់ខ្លះ</span>';
+      } else {
+        statusBadge = '<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-rose-100 text-rose-800 border border-rose-200 inline-flex items-center gap-1"><i class="fa-solid fa-circle-exclamation text-[9px]"></i> មិនទាន់បង់</span>';
+      }
+
+      return `
       <div class="p-4 hover:bg-amber-50/30 transition border-b border-gray-100 last:border-b-0 space-y-2.5">
         <div class="flex items-start justify-between gap-2">
           <div class="flex-1 min-w-0">
-            <div class="font-bold text-gray-900 text-base leading-tight">${escapeHtml(e.expense_name)}</div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-bold text-gray-900 text-base leading-tight">${escapeHtml(e.expense_name)}</span>
+              ${statusBadge}
+            </div>
             <div class="text-xs text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
               <span class="px-2 py-0.5 rounded bg-gray-100 text-gray-700 font-medium">${escapeHtml(e.payment_method || 'សាច់ប្រាក់')}</span>
               ${e.date ? `<span class="text-gray-400">📅 ${e.date.substring(0, 10)}</span>` : ''}
@@ -1410,18 +1486,18 @@ function renderExpensesTable() {
           </div>
           <div class="text-right whitespace-nowrap">
             <div class="text-lg font-extrabold text-gray-900">
-              ${e.currency === 'USD' ? '$' : ''}${Number(e.total_amount).toLocaleString()}${e.currency === 'USD' ? '' : ' ៛'}
+              ${currSym}${Number(total).toLocaleString()}${currPost}
             </div>
-            <div class="text-xs font-medium text-emerald-700 mt-0.5">
-              កក់: ${e.currency === 'USD' ? '$' : ''}${Number(e.deposit).toLocaleString()}${e.currency === 'USD' ? '' : ' ៛'}
+            <div class="text-xs font-semibold text-blue-700 mt-0.5">
+              បានបង់: ${currSym}${Number(deposit).toLocaleString()}${currPost}
             </div>
           </div>
         </div>
 
-        <div class="flex items-center justify-between text-xs bg-amber-50/60 p-2.5 rounded-xl border border-amber-100">
-          <span class="text-gray-600 font-medium">ប្រាក់នៅសល់ត្រូវទូទាត់:</span>
-          <span class="font-bold text-sm ${Number(e.balance) > 0 ? 'text-rose-600' : 'text-gray-500'}">
-            ${e.currency === 'USD' ? '$' : ''}${Number(e.balance).toLocaleString()}${e.currency === 'USD' ? '' : ' ៛'}
+        <div class="flex items-center justify-between text-xs p-2.5 rounded-xl border ${balance <= 0 ? 'bg-emerald-50/70 border-emerald-200 text-emerald-800' : 'bg-amber-50/70 border-amber-200 text-amber-900'}">
+          <span class="font-medium">ប្រាក់នៅសល់ត្រូវទូទាត់:</span>
+          <span class="font-bold text-sm ${balance > 0 ? 'text-rose-600' : 'text-emerald-700'}">
+            ${currSym}${Number(balance).toLocaleString()}${currPost} ${balance <= 0 ? '(រួចរាល់)' : ''}
           </span>
         </div>
 
@@ -1432,15 +1508,16 @@ function renderExpensesTable() {
         ` : ''}
 
         <div class="flex items-center justify-end gap-2 pt-1">
-          <button onclick="editExpense('${e.id}')" class="px-3 py-1.5 text-xs font-semibold text-amber-800 bg-amber-100 hover:bg-amber-200 rounded-lg transition flex items-center gap-1">
+          <button onclick="editExpense('${e.id}')" class="px-3 py-1.5 text-xs font-semibold text-amber-800 bg-amber-100 hover:bg-amber-200 rounded-lg transition flex items-center gap-1 cursor-pointer">
             <i class="fa-solid fa-pen-to-square"></i> កែប្រែ
           </button>
-          <button onclick="deleteExpense('${e.id}')" class="px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition flex items-center gap-1">
+          <button onclick="deleteExpense('${e.id}')" class="px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition flex items-center gap-1 cursor-pointer">
             <i class="fa-solid fa-trash-can"></i> លុប
           </button>
         </div>
       </div>
-    `).join('');
+      `;
+    }).join('');
   }
 }
 
@@ -1975,6 +2052,8 @@ function initEventListeners() {
   if (expSearch) expSearch.addEventListener('input', renderExpensesTable);
   const expPayFilter = document.getElementById('expense-payment-filter');
   if (expPayFilter) expPayFilter.addEventListener('change', renderExpensesTable);
+  const expStatusFilter = document.getElementById('expense-status-filter');
+  if (expStatusFilter) expStatusFilter.addEventListener('change', renderExpensesTable);
 
   // Modal Form for Adding Location
   const locForm = document.getElementById('location-form');

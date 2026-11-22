@@ -203,8 +203,8 @@
           </div>
         </div>
 
-        <!-- Metric Summary Cards (2x2 on Mobile, 4x1 on Desktop) -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-5">
+        <!-- Metric Summary Cards (2-cols on mobile, 5-cols on desktop) -->
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
           
           <!-- 1. Total Gifts Card -->
           <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-pink-100 card-hover flex flex-col justify-between">
@@ -225,31 +225,12 @@
             </div>
           </div>
 
-          <!-- 2. Total Deposit Paid Card (ប្រាក់កក់មុន) -->
-          <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-amber-100 card-hover flex flex-col justify-between">
-            <div class="flex items-center justify-between gap-1 mb-2">
-              <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 truncate">ប្រាក់កក់មុន (Deposits)</span>
-              <div class="w-7 h-7 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                <i class="fa-solid fa-wallet text-xs sm:text-lg"></i>
-              </div>
-            </div>
-            <div>
-              <div class="text-lg sm:text-2xl font-extrabold text-amber-600" id="dash-deposit-usd">$0</div>
-              <div class="text-xs sm:text-sm font-semibold text-amber-500" id="dash-deposit-khr">0 ៛</div>
-              <div class="mt-1.5">
-                <span class="text-[10px] sm:text-xs px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full font-medium inline-block truncate max-w-full">
-                  បានកក់មុន
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 3. Total Expenses Card -->
+          <!-- 2. Total Expenses Card -->
           <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-pink-100 card-hover flex flex-col justify-between">
             <div class="flex items-center justify-between gap-1 mb-2">
               <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 truncate">ចំណាយសរុប (Expenses)</span>
               <div class="w-7 h-7 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                <i class="fa-solid fa-money-bill-transfer text-xs sm:text-lg"></i>
+                <i class="fa-solid fa-file-invoice-dollar text-xs sm:text-lg"></i>
               </div>
             </div>
             <div>
@@ -263,10 +244,48 @@
             </div>
           </div>
 
-          <!-- 4. Net Balance Card -->
-          <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-pink-100 card-hover flex flex-col justify-between">
+          <!-- 3. Total Paid Card (បានទូទាត់រួច - កក់ & បង់គ្រប់) -->
+          <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-blue-100 card-hover flex flex-col justify-between">
             <div class="flex items-center justify-between gap-1 mb-2">
-              <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 truncate">តុល្យភាពសុទ្ធ (Balance)</span>
+              <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 truncate">បានទូទាត់រួច (Paid)</span>
+              <div class="w-7 h-7 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-circle-check text-xs sm:text-lg"></i>
+              </div>
+            </div>
+            <div>
+              <div class="text-lg sm:text-2xl font-extrabold text-blue-600" id="dash-deposit-usd">$0</div>
+              <div class="text-xs sm:text-sm font-semibold text-blue-500" id="dash-deposit-khr">0 ៛</div>
+              <div class="mt-1.5">
+                <span class="text-[10px] sm:text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full font-medium inline-block truncate max-w-full">
+                  កក់ & បង់គ្រប់
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Remaining Balance Due Card (នៅសល់ត្រូវសង / នៅជំពាក់) -->
+          <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-amber-100 card-hover flex flex-col justify-between">
+            <div class="flex items-center justify-between gap-1 mb-2">
+              <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 truncate">នៅសល់ត្រូវសង (Due)</span>
+              <div class="w-7 h-7 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-clock-rotate-left text-xs sm:text-lg"></i>
+              </div>
+            </div>
+            <div>
+              <div class="text-lg sm:text-2xl font-extrabold text-amber-600" id="dash-due-usd">$0</div>
+              <div class="text-xs sm:text-sm font-semibold text-amber-500" id="dash-due-khr">0 ៛</div>
+              <div class="mt-1.5">
+                <span class="text-[10px] sm:text-xs px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full font-medium inline-block truncate max-w-full">
+                  នៅជំពាក់គេ
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. Net Balance Card (តុល្យភាពសុទ្ធ: ចំណូលដកចំណាយ) -->
+          <div class="col-span-2 lg:col-span-1 bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm border border-pink-100 card-hover flex flex-col justify-between">
+            <div class="flex items-center justify-between gap-1 mb-2">
+              <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 truncate">តុល្យភាពសុទ្ធ (Net)</span>
               <div class="w-7 h-7 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                 <i class="fa-solid fa-scale-balanced text-xs sm:text-lg"></i>
               </div>
@@ -281,6 +300,7 @@
               </div>
             </div>
           </div>
+
         </div>
 
         <!-- Recent Gifts Section (Table on Desktop, Sleek List on Mobile) -->
@@ -762,7 +782,15 @@
               <option value="ACLEDA">ACLEDA Bank</option>
             </select>
 
-            <button onclick="switchView('expense-entry-view')" class="w-full sm:w-auto px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold shadow-md transition flex items-center justify-center gap-1.5">
+            <!-- Status Filter -->
+            <select id="expense-status-filter" class="w-full sm:w-auto px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+              <option value="all">ស្ថានភាពទាំងអស់</option>
+              <option value="paid">បង់គ្រប់ (Paid)</option>
+              <option value="partial">កក់ខ្លះ (Partial)</option>
+              <option value="unpaid">មិនទាន់បង់ (Unpaid)</option>
+            </select>
+
+            <button onclick="switchView('expense-entry-view')" class="w-full sm:w-auto px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer">
               <i class="fa-solid fa-plus"></i>
               <span>បន្ថែមការចំណាយ</span>
             </button>
@@ -783,8 +811,9 @@
                   <th class="px-4 py-3.5">#</th>
                   <th class="px-4 py-3.5">ឈ្មោះចំណាយ</th>
                   <th class="px-4 py-3.5">ថ្លៃសរុប</th>
-                  <th class="px-4 py-3.5">ប្រាក់កក់</th>
-                  <th class="px-4 py-3.5">ប្រាក់នៅសល់</th>
+                  <th class="px-4 py-3.5">បានបង់</th>
+                  <th class="px-4 py-3.5">នៅសល់</th>
+                  <th class="px-4 py-3.5 text-center">ស្ថានភាព</th>
                   <th class="px-4 py-3.5">វិធីទូទាត់</th>
                   <th class="px-4 py-3.5">កាលបរិច្ឆេទ</th>
                   <th class="px-4 py-3.5 text-right">សកម្មភាព</th>
